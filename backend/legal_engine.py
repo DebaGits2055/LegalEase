@@ -209,10 +209,12 @@ def run_local_legal_audit(
     health_score = 90
     
     # 1. Non-Compete & Restraint of Trade Check (Section 27 Indian Contract Act)
-    if "non-compete" in lower_text or "restraint" in lower_text or "prohibited from working" in lower_text:
-        # Check duration
-        has_post_term = any(w in lower_text for w in ["after termination", "post-employment", "subsequent to departure", "for a period of 1 year", "for a period of 2 years", "24 months", "12 months"])
-        if has_post_term:
+    if any(k in lower_text for k in ["non-compete", "non compete", "not compete", "restraint", "prohibited from working", "competing business", "compete with company", "competing"]):
+        has_post_term = any(w in lower_text for w in [
+            "after termination", "post-employment", "subsequent to departure", "separation", "resignation", 
+            "1 year", "2 years", "3 years", "5 years", "year", "years", "24 months", "12 months", "months", "post-separation"
+        ])
+        if has_post_term or "non-compete" in lower_text or "not compete" in lower_text:
             red_flags.append({
                 "severity": "HIGH",
                 "clause": "Post-Termination Non-Compete Covenant",
@@ -223,8 +225,8 @@ def run_local_legal_audit(
             health_score -= 25
 
     # 2. Intellectual Property (IP) Overbreadth
-    if any(k in lower_text for k in ["intellectual property", "inventions", "assigns all rights", "all works"]):
-        has_broad_ip = any(w in lower_text for w in ["whether or not during working hours", "personal time", "unrelated to company", "prior inventions", "all ideas"])
+    if any(k in lower_text for k in ["intellectual property", "inventions", "assigns all rights", "all works", "work product"]):
+        has_broad_ip = any(w in lower_text for w in ["whether or not during working hours", "personal time", "unrelated to company", "prior inventions", "all ideas", "irrevocably", "in perpetuity", "sole and exclusive property"])
         if has_broad_ip:
             red_flags.append({
                 "severity": "HIGH",
@@ -236,8 +238,8 @@ def run_local_legal_audit(
             health_score -= 20
 
     # 3. Termination Notice & Lockout Trap
-    if "termination" in lower_text or "notice period" in lower_text:
-        has_unilateral = any(w in lower_text for w in ["terminate at will", "immediate termination without cause", "without notice", "sole discretion", "zero notice"])
+    if any(k in lower_text for k in ["termination", "notice period", "terminate", "separation"]):
+        has_unilateral = any(w in lower_text for w in ["terminate at will", "immediate termination without cause", "without notice", "sole discretion", "zero notice", "immediate termination", "forthwith"])
         if has_unilateral:
             red_flags.append({
                 "severity": "MEDIUM",
@@ -249,8 +251,11 @@ def run_local_legal_audit(
             health_score -= 15
 
     # 4. Indemnification & Unlimited Liability
-    if "indemnif" in lower_text or "hold harmless" in lower_text or "liability" in lower_text:
-        has_unlimited = any(w in lower_text for w in ["unlimited liability", "all damages whatsoever", "consequential damages", "indemnify and hold harmless against any and all"])
+    if any(k in lower_text for k in ["indemnif", "hold harmless", "liability", "damages"]):
+        has_unlimited = any(w in lower_text for w in [
+            "unlimited liability", "all damages whatsoever", "consequential damages", 
+            "indemnify and hold harmless", "indemnify", "fully liable", "entire cost", "penalty"
+        ])
         if has_unlimited:
             red_flags.append({
                 "severity": "HIGH",
