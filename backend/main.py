@@ -256,6 +256,7 @@ async def analyze_document(
     language: str = Form("English"),
     engine_mode: str = Form("local"),
     is_ephemeral: bool = Form(False),
+    client_text: Optional[str] = Form(None),
     user = Depends(get_current_user)
 ):
     """Audits document against standardized legal playbook and enforces 3-free audit quota."""
@@ -280,7 +281,8 @@ async def analyze_document(
         language=language, 
         engine_mode=engine_mode,
         user_email=user_email,
-        is_ephemeral=is_ephemeral
+        is_ephemeral=is_ephemeral,
+        client_text=client_text
     )
     
     # If successful & authentic legal doc, increment user's audit counter and save encrypted audit

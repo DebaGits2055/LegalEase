@@ -1,6 +1,6 @@
 import { supabase, isSupabaseConfigured, localStore } from './supabase';
 import { mongoDb, encryptContractText } from './mongo';
-import { auditDocumentWithGemini, chatWithLegalCounsel } from './gemini';
+import { auditDocumentWithGemini, chatWithLegalCounsel, extractClientText } from './gemini';
 
 export const API_BASE = '';
 export const getToken = () => localStorage.getItem('legalease_token');
@@ -375,11 +375,21 @@ export const api = {
 
     // 1. Try FastAPI Backend (/api/documents/analyze) for hardware-accelerated AES-256 Vault & Local Engine
     try {
+      let clientText = '';
+      try {
+        clientText = await extractClientText(file);
+      } catch (ocrErr) {
+        console.warn('Client text extraction notice:', ocrErr);
+      }
+
       const formData = new FormData();
       formData.append('file', file);
       formData.append('language', language);
       formData.append('engine_mode', engineMode);
       formData.append('is_ephemeral', isEphemeral ? 'true' : 'false');
+      if (clientText) {
+        formData.append('client_text', clientText);
+      }
 
       const headers = {};
       const token = getToken();

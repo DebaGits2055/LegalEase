@@ -26,6 +26,16 @@ export const extractClientText = async (file) => {
     }
   }
 
+  if (file.type && file.type.startsWith('image/')) {
+    try {
+      const Tesseract = await import('tesseract.js');
+      const ret = await Tesseract.recognize(file, 'eng');
+      return (ret?.data?.text || '').trim();
+    } catch (e) {
+      console.warn('Image OCR extraction notice:', e);
+    }
+  }
+
   if (fileName.endsWith('.txt') || fileName.endsWith('.md') || (file.type && file.type.startsWith('text/'))) {
     try {
       return await file.text();
@@ -39,12 +49,22 @@ export const extractClientText = async (file) => {
 
 // 100% Local Autonomous Legal Audit
 export const auditDocumentWithGemini = async (file, language = 'English') => {
+  let clientText = '';
+  try {
+    clientText = await extractClientText(file);
+  } catch (ocrErr) {
+    console.warn('Client text extraction notice:', ocrErr);
+  }
+
   try {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('language', language);
     formData.append('engine_mode', 'local');
     formData.append('is_ephemeral', 'true');
+    if (clientText) {
+      formData.append('client_text', clientText);
+    }
 
     const token = localStorage.getItem('legalease_token');
     const headers = {};
@@ -67,18 +87,30 @@ export const auditDocumentWithGemini = async (file, language = 'English') => {
   }
 
   // Fallback: Client-Side Offline Statutory Audit (Zero External API calls)
-  const clientText = await extractClientText(file);
-  const lowerText = clientText.toLowerCase();
+  const lowerText = (clientText || '').toLowerCase();
+  const fileName = (file.name || '').toLowerCase();
+  const hasLegalName = ['contract', 'agreement', 'nda', 'deed', 'lease', 'affidavit', 'fir', 'bail', 'legal', 'undertaking', 'tenancy', 'employment'].some(k => fileName.includes(k));
 
   // Basic legal structural check
-  const legalMarkers = ['whereas', 'agreement', 'witnesseth', 'party', 'covenant', 'terms', 'signed', 'lessor', 'lessee', 'employer', 'employee'];
+  const legalMarkers = [
+    'whereas', 'agreement', 'witnesseth', 'party', 'covenant', 'terms', 'signed', 
+    'lessor', 'lessee', 'employer', 'employee', 'non-compete', 'confidentiality',
+    'intellectual property', 'termination', 'liability', 'section', 'affidavit', 'deed'
+  ];
   const markerCount = legalMarkers.filter(m => lowerText.includes(m)).length;
 
-  if (clientText && markerCount < 2) {
+  if (!hasLegalName && (markerCount < 2 || clientText.length < 25)) {
+    const langLower = (language || '').toLowerCase();
+    let rejMsg = NON_LEGAL_DOCUMENT_MESSAGE;
+    if (langLower.includes('bangla') || langLower.includes('bengali') || langLower.includes('bn')) {
+      rejMsg = "⚠️ এটি কোনো স্বীকৃত আইনি নথি নয়। অনুগ্রহ করে একটি বৈধ আইনি নথি আপলোড করুন (যেমন: সম্পত্তির দলিল, চুক্তিপত্র, চিকিৎসা সম্মতি, পুলিশ এফআইআর, এনডিএ ইত্যাদি)।";
+    } else if (langLower.includes('hindi') || langLower.includes('hi')) {
+      rejMsg = "⚠️ यह कोई मान्यता प्राप्त कानूनी दस्तावेज़ नहीं है। कृपया एक वैध कानूनी दस्तावेज़ अपलोड करें (जैसे: संपत्ति विलेख, अनुबंध पत्र, चिकित्सा सहमति, पुलिस प्राथमिकी/एफआईआर, एनडीए आदि)।";
+    }
     return {
       success: true,
       is_legal: false,
-      report: NON_LEGAL_DOCUMENT_MESSAGE,
+      report: rejMsg,
       engine: 'Local Specialized Legal Engine (100% Private, On-Premise)'
     };
   }

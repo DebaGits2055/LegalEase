@@ -73,12 +73,20 @@ LEGAL_CATEGORIES = {
 # ========================================================
 # 2. DOCUMENT TEXT EXTRACTION & PHASE 0 CLASSIFIER
 # ========================================================
+def get_localized_rejection_message(language: str) -> str:
+    lang_lower = (language or "").lower()
+    if "bangla" in lang_lower or "bengali" in lang_lower or "bn" in lang_lower:
+        return "⚠️ এটি কোনো স্বীকৃত আইনি নথি নয়। অনুগ্রহ করে একটি বৈধ আইনি নথি আপলোড করুন (যেমন: সম্পত্তির দলিল, চুক্তিপত্র, চিকিৎসা সম্মতি, পুলিশ এফআইআর, এনডিএ ইত্যাদি)।"
+    elif "hindi" in lang_lower or "hi" in lang_lower:
+        return "⚠️ यह कोई मान्यता प्राप्त कानूनी दस्तावेज़ नहीं है। कृपया एक वैध कानूनी दस्तावेज़ अपलोड करें (जैसे: संपत्ति विलेख, अनुबंध पत्र, चिकित्सा सहमति, पुलिस प्राथमिकी/एफआईआर, एनडीए आदि)।"
+    return "⚠️ This is not a recognized legal document. Please upload an authentic legal instrument (Property Deed, Medical Consent, Criminal/Police Report, Employment Agreement, NDA, etc.)."
+
 def extract_text_from_file(file_path: str, filename: str) -> str:
     """
     Extracts text from PDF, DOCX, or text files.
     """
     extracted_text = ""
-    lower_name = filename.lower()
+    lower_name = (filename or "").lower()
     
     if lower_name.endswith(".pdf"):
         try:
@@ -88,6 +96,17 @@ def extract_text_from_file(file_path: str, filename: str) -> str:
         except Exception as e:
             print(f"PDF extraction error: {e}")
             
+    elif lower_name.endswith(".docx"):
+        try:
+            import zipfile
+            import xml.etree.ElementTree as ET
+            with zipfile.ZipFile(file_path) as z:
+                xml_content = z.read("word/document.xml")
+                tree = ET.fromstring(xml_content)
+                extracted_text = " ".join([node.text for node in tree.iter("{http://schemas.openxmlformats.org/wordprocessingml/2006/main}t") if node.text])
+        except Exception as e:
+            print(f"DOCX extraction error: {e}")
+
     elif lower_name.endswith(".txt") or lower_name.endswith(".md"):
         try:
             with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
@@ -101,22 +120,41 @@ def classify_legal_document(text: str, filename: str) -> Tuple[bool, Optional[st
     """
     Phase 0 Classifier:
     Returns (is_legal, category_key, category_details)
-    Strictly weeds out non-legal files (e.g. food receipts, code, memes, resumes, selfies).
+    Strictly weeds out non-legal files (e.g. food receipts, code, memes, resumes, selfies, grocery lists).
     """
-    if not text:
-        # If image or scanned PDF where text couldn't be extracted, check filename clues
-        # or defer to multimodal vision model
-        return True, "CORPORATE_EMPLOYMENT", LEGAL_CATEGORIES["CORPORATE_EMPLOYMENT"]
-        
-    lower_text = text.lower()
-    
+    clean_text = (text or "").strip()
+    lower_text = clean_text.lower()
+    lower_name = (filename or "").lower()
+
+    # Check for filename clues
+    has_legal_filename = any(term in lower_name for term in [
+        "contract", "agreement", "nda", "deed", "lease", "affidavit", 
+        "fir", "bail", "undertaking", "memorandum", "tenancy", "employment",
+        "power_of_attorney", "legal", "clause", "petition"
+    ])
+
+    # If text is empty or very short (< 30 chars):
+    if len(clean_text) < 30:
+        if has_legal_filename:
+            for cat_key, cat_data in LEGAL_CATEGORIES.items():
+                if any(kw in lower_name for kw in cat_data["keywords"]):
+                    return True, cat_key, cat_data
+            return True, "CORPORATE_EMPLOYMENT", LEGAL_CATEGORIES["CORPORATE_EMPLOYMENT"]
+        # Without legal text and without legal filename -> REJECT IMMEDIATELY!
+        return False, None, None
+
     # Check for general legal structural markers
     legal_structure_markers = [
         "whereas", "witnesseth", "now therefore", "in witness whereof",
         "hereinafter referred to", "terms and conditions", "governing law",
-        "jurisdiction", "arbitration", "indemnify", "covenant", "agreement",
+        "jurisdiction", "arbitration", "indemnif", "covenant", "agreement",
         "party of the first part", "affidavit", "solemnly affirm", "deponent",
-        "section", "pursuant to", "signed, sealed and delivered"
+        "section", "pursuant to", "signed", "lessor", "lessee", "tenant",
+        "landlord", "employer", "employee", "non-compete", "confidentiality",
+        "intellectual property", "termination", "liability", "stamp duty",
+        "police station", "accused", "complainant", "bail application",
+        "first information report", "notary", "power of attorney", "will and testament",
+        "medical negligence", "surgical consent", "informed consent", "statutory"
     ]
     
     structure_score = sum(1 for m in legal_structure_markers if m in lower_text)
@@ -130,8 +168,8 @@ def classify_legal_document(text: str, filename: str) -> Tuple[bool, Optional[st
     best_cat = max(category_scores, key=category_scores.get)
     max_score = category_scores[best_cat]
     
-    # If both structure score and category score are too low, it's NOT a legal document
-    if structure_score < 2 and max_score < 2:
+    # STRICT GUARD: If document lacks sufficient legal markers and category keywords, it is NON-LEGAL!
+    if structure_score < 2 and max_score < 1 and not has_legal_filename:
         return False, None, None
         
     return True, best_cat, LEGAL_CATEGORIES[best_cat]
@@ -142,7 +180,7 @@ def classify_legal_document(text: str, filename: str) -> Tuple[bool, Optional[st
 def run_local_legal_audit(
     text: str, 
     filename: str, 
-    category_key: str, 
+    category_key: str = "CORPORATE_EMPLOYMENT", 
     language: str = "English"
 ) -> Dict[str, Any]:
     """
@@ -151,8 +189,21 @@ def run_local_legal_audit(
     - Zero data transmitted to cloud or external APIs.
     - Analyzes contract clauses against statutory playbooks and Bar standards.
     """
-    category = LEGAL_CATEGORIES.get(category_key, LEGAL_CATEGORIES["CORPORATE_EMPLOYMENT"])
-    lower_text = text.lower()
+    is_legal, verified_key, _ = classify_legal_document(text, filename)
+    if not is_legal:
+        return {
+            "success": True,
+            "is_legal": False,
+            "category": None,
+            "category_key": None,
+            "health_score": 0,
+            "report": get_localized_rejection_message(language),
+            "engine": "Local Specialized Legal Engine (100% Private, Zero Cloud Retention)"
+        }
+
+    effective_cat = verified_key or category_key
+    category = LEGAL_CATEGORIES.get(effective_cat, LEGAL_CATEGORIES["CORPORATE_EMPLOYMENT"])
+    lower_text = (text or "").lower()
     
     red_flags = []
     health_score = 90

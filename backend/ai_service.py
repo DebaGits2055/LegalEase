@@ -16,7 +16,8 @@ try:
         classify_legal_document, 
         run_local_legal_audit,
         STRICT_REJECTION_MESSAGE,
-        LEGAL_CATEGORIES
+        LEGAL_CATEGORIES,
+        get_localized_rejection_message
     )
 except ImportError:
     from backend.playbook import LEGAL_PLAYBOOK, NON_LEGAL_DOCUMENT_MESSAGE
@@ -26,7 +27,8 @@ except ImportError:
         classify_legal_document, 
         run_local_legal_audit,
         STRICT_REJECTION_MESSAGE,
-        LEGAL_CATEGORIES
+        LEGAL_CATEGORIES,
+        get_localized_rejection_message
     )
 
 dotenv_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")
@@ -101,7 +103,8 @@ def analyze_legal_document(
     language: str = "English",
     engine_mode: str = "local",
     user_email: str = "anonymous",
-    is_ephemeral: bool = False
+    is_ephemeral: bool = False,
+    client_text: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     100% Local On-Premise Legal Document Compliance Audit:
@@ -124,6 +127,9 @@ def analyze_legal_document(
     try:
         # 2. EXTRACT TEXT AND RUN PHASE 0 STRICT LEGAL CLASSIFIER
         extracted_text = extract_text_from_file(temp_path, filename)
+        if (not extracted_text or len(extracted_text.strip()) < 20) and client_text:
+            extracted_text = client_text.strip()
+
         is_legal, category_key, category_info = classify_legal_document(extracted_text, filename)
 
         if not is_legal:
@@ -135,7 +141,7 @@ def analyze_legal_document(
             return {
                 "success": True,
                 "is_legal": False,
-                "report": STRICT_REJECTION_MESSAGE,
+                "report": get_localized_rejection_message(language),
                 "audio_url": None,
                 "vault_receipt": None
             }
@@ -164,16 +170,25 @@ def analyze_legal_document(
             =========================================
             OUTPUT LANGUAGE REQUIREMENT:
             {lang_rule}
+
+            MANDATORY VALIDATION RULES:
+            Rule 1 - LEGAL AUTHENTICITY VALIDATION:
+            Examine if the document text above is an authentic legal instrument (e.g. agreement, deed, lease, contract, NDA, affidavit, police report, medical consent).
+            If the text is NOT an authentic legal document (e.g. food recipe, grocery list, homework, code, casual conversation, jokes, shopping list), you MUST respond ONLY with the exact text:
+            "This is not a recognized legal document. Please upload an authentic legal instrument (Property Deed, Medical Consent, Criminal/Police Report, Employment Agreement, NDA, etc.)."
+            
+            Rule 2 - SPECIFIC CLAUSE AUDIT:
+            If it is a legal document, analyze the actual clauses present in the text. Highlight specific High-Risk and Medium-Risk covenants (e.g. non-compete, indemnification, termination).
+            Provide tailored Attorney Counter-Drafts for every flagged clause. Do NOT provide generic boilerplate text.
+
             Respond strictly in the requested language following the standard 4-heading output format with Attorney Counter-Drafts.
             """
             raw_ollama = query_local_ollama(prompt)
             if raw_ollama:
                 # Script verification: ensure requested non-English language didn't get ignored
                 if ("bangla" in lang_lower or "bengali" in lang_lower) and not re.search(r'[\u0980-\u09FF]', raw_ollama):
-                    # Ollama output English despite Bangla instruction; trigger localized statutory engine
                     ollama_response = None
                 elif ("hindi" in lang_lower) and not re.search(r'[\u0900-\u097F]', raw_ollama):
-                    # Ollama output English despite Hindi instruction; trigger localized statutory engine
                     ollama_response = None
                 else:
                     ollama_response = raw_ollama
@@ -190,6 +205,18 @@ def analyze_legal_document(
                 category_key or "CORPORATE_EMPLOYMENT", 
                 language
             )
+            if not local_result.get("is_legal"):
+                if os.path.exists(temp_path):
+                    try: os.remove(temp_path)
+                    except Exception: pass
+                vault_instance.shred_document(vault_receipt["vault_id"])
+                return {
+                    "success": True,
+                    "is_legal": False,
+                    "report": local_result.get("report") or get_localized_rejection_message(language),
+                    "audio_url": None,
+                    "vault_receipt": None
+                }
             resp_text = local_result["report"]
             engine_used = "Local Specialized Legal Engine (100% Private, On-Premise)"
             identified_category = local_result["category"]
@@ -199,7 +226,10 @@ def analyze_legal_document(
             "not a legal document",
             "not a legal contract",
             "not a recognized legal document",
-            "please upload the correct one"
+            "please upload the correct one",
+            "স্বীকৃত আইনি নথি নয়",
+            "বৈধ আইনি নথি",
+            "मान्यता प्राप्त कानूनी दस्तावेज़ नहीं"
         ]
         if any(kw in resp_text.lower() for kw in rejection_keywords):
             if os.path.exists(temp_path):
@@ -209,7 +239,7 @@ def analyze_legal_document(
             return {
                 "success": True,
                 "is_legal": False,
-                "report": STRICT_REJECTION_MESSAGE,
+                "report": get_localized_rejection_message(language),
                 "audio_url": None,
                 "vault_receipt": None
             }
