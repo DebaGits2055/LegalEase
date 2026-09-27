@@ -10,14 +10,16 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 try:
-    from database import init_db, get_db
+    from database import init_db, get_db, save_encrypted_audit, get_user_audits
+    from vault import vault_instance
     from auth import (
         generate_captcha_assets, send_real_otp_email, create_access_token,
         decode_access_token, get_user_by_email, get_user_by_id
     )
     from ai_service import analyze_legal_document, chat_with_legal_counsel
 except ImportError:
-    from backend.database import init_db, get_db
+    from backend.database import init_db, get_db, save_encrypted_audit, get_user_audits
+    from backend.vault import vault_instance
     from backend.auth import (
         generate_captcha_assets, send_real_otp_email, create_access_token,
         decode_access_token, get_user_by_email, get_user_by_id
@@ -252,6 +254,8 @@ async def upload_avatar(file: UploadFile = File(...), user = Depends(get_current
 async def analyze_document(
     file: UploadFile = File(...),
     language: str = Form("English"),
+    engine_mode: str = Form("local"),
+    is_ephemeral: bool = Form(False),
     user = Depends(get_current_user)
 ):
     """Audits document against standardized legal playbook and enforces 3-free audit quota."""
@@ -268,22 +272,37 @@ async def analyze_document(
             
     file_bytes = await file.read()
     filename = file.filename or "uploaded_document.pdf"
+    user_email = user.get("email", "anonymous") if user else "anonymous"
     
-    result = analyze_legal_document(file_bytes, filename, language)
+    result = analyze_legal_document(
+        file_bytes=file_bytes, 
+        filename=filename, 
+        language=language, 
+        engine_mode=engine_mode,
+        user_email=user_email,
+        is_ephemeral=is_ephemeral
+    )
     
-    # If successful & authentic legal doc, increment user's audit counter
+    # If successful & authentic legal doc, increment user's audit counter and save encrypted audit
     if result.get("success") and result.get("is_legal") and user:
         conn = get_db()
         cursor = conn.cursor()
         cursor.execute("UPDATE users SET doc_upload_count = doc_upload_count + 1 WHERE id = ?", (user["id"],))
-        
-        # Save audit record
-        cursor.execute("""
-            INSERT INTO document_audits (user_id, filename, language, report_text, audio_url)
-            VALUES (?, ?, ?, ?, ?)
-        """, (user["id"], filename, language, result.get("report", ""), result.get("audio_url", "")))
-        
         conn.commit()
+        
+        # Save AES-256-GCM encrypted audit record
+        vault_rec = result.get("vault_receipt") or {}
+        save_encrypted_audit(
+            user_id=user["id"],
+            filename=filename,
+            language=language,
+            plain_report_text=result.get("report", ""),
+            audio_url=result.get("audio_url"),
+            vault_id=vault_rec.get("vault_id"),
+            sha256_fingerprint=vault_rec.get("sha256_fingerprint"),
+            category=result.get("category", "General Legal"),
+            is_ephemeral=is_ephemeral
+        )
         
         # Fetch updated user count
         cursor.execute("SELECT doc_upload_count, is_subscribed FROM users WHERE id = ?", (user["id"],))
@@ -294,6 +313,22 @@ async def analyze_document(
         result["is_subscribed"] = bool(row["is_subscribed"])
         
     return result
+
+@app.get("/api/documents/history")
+def get_audit_history(user = Depends(get_current_user)):
+    """Returns authenticated user's audit history (decrypted on retrieval)."""
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    audits = get_user_audits(user["id"])
+    return {"success": True, "audits": audits}
+
+@app.get("/api/vault/verify/{vault_id}")
+def verify_vault_seal(vault_id: str):
+    """Cryptographic seal verification endpoint for any audited document."""
+    status_info = vault_instance.get_vault_status(vault_id)
+    if not status_info:
+        raise HTTPException(status_code=404, detail="Vault record not found or shredded under Ephemeral Zero-Retention Policy.")
+    return {"success": True, "record": status_info}
 
 class ChatRequest(BaseModel):
     query: str

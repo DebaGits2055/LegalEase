@@ -95,11 +95,15 @@ export default function SubscriptionModal({ isOpen, onClose, onSubscriptionSucce
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                    High-Speed Gemini Flash Intelligence
+                    <strong>Attorney Counter-Draft Clauses</strong> (Copy-paste ready)
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                    Multilingual Audio Briefings (EN, HI, BN)
+                    5 Specialized Legal Disciplines (Property, Medical, Crime, etc.)
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                    Multilingual Audio Briefings (EN, HI, BN, TA)
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="w-4 h-4 text-blue-600 flex-shrink-0" />
@@ -124,15 +128,15 @@ export default function SubscriptionModal({ isOpen, onClose, onSubscriptionSucce
             {/* Pro Power Pack (30 Uses - ₹399) */}
             <div className="p-5 rounded-2xl bg-white/95 border-2 border-indigo-500 shadow-lg shadow-indigo-500/10 flex flex-col justify-between relative overflow-hidden bg-gradient-to-b from-white to-indigo-50/40">
               <div className="absolute top-0 right-0 bg-gradient-to-l from-indigo-600 to-blue-600 text-white text-[10px] font-extrabold px-3 py-1 rounded-bl-xl uppercase tracking-wide">
-                ⭐ GEMINI 3.1 PRO
+                ⭐ BEST VALUE • SAVE 60%
               </div>
               <div>
-                <span className="doc-tag text-[11px] px-2.5 py-0.5 mb-2 bg-indigo-100 text-indigo-800 border-indigo-200 font-bold">BEST VALUE</span>
+                <span className="doc-tag text-[11px] px-2.5 py-0.5 mb-2 bg-indigo-100 text-indigo-800 border-indigo-200 font-bold">ENTERPRISE GRADE</span>
                 <h4 className="text-lg font-bold text-slate-900">Pro Power Pack</h4>
                 <div className="text-3xl font-extrabold text-indigo-700 my-2">
                   ₹399 <span className="text-xs font-normal text-slate-500">/ 30 Uses</span>
                 </div>
-                <p className="text-xs text-indigo-600 font-semibold mb-4">Only ₹13.3 per audit • Gemini 3.1 Pro Engine</p>
+                <p className="text-xs text-indigo-600 font-semibold mb-4">Only ₹13.3 per audit • Local Private AI + Gemini 3.1 Pro</p>
                 <ul className="space-y-2 text-xs text-slate-700">
                   <li className="flex items-center gap-2">
                     <Check className="w-4 h-4 text-indigo-600 flex-shrink-0" />
@@ -140,26 +144,26 @@ export default function SubscriptionModal({ isOpen, onClose, onSubscriptionSucce
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="w-4 h-4 text-indigo-600 flex-shrink-0" />
-                    <strong>Powered by Gemini 3.1 Pro</strong> Deep Reasoning
+                    <strong>Local Private Legal Engine (100% Zero-Cloud Retention)</strong>
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="w-4 h-4 text-indigo-600 flex-shrink-0" />
-                    Full 4-Pillar Playbook Risk Matrix
+                    <strong>Attorney Counter-Drafting with Rationale</strong>
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="w-4 h-4 text-indigo-600 flex-shrink-0" />
-                    Instant Camera & PDF Multi-Auditing
+                    <strong>Official Legal Risk Scorecard PDF Export</strong>
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="w-4 h-4 text-indigo-600 flex-shrink-0" />
-                    256-Bit End-to-End Encrypted Vault
+                    Encrypted Vault Storage with Expiration Alarms
                   </li>
                 </ul>
               </div>
               <button
                 type="button"
-                onClick={() => setSelectedPlan({ name: 'Pro Power Pack (30 Uses - Gemini 3.1 Pro)', price: 399, uses: 30, engine: 'Gemini 3.1 Pro' })}
-                className="w-full mt-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-sm rounded-xl shadow-lg transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                onClick={() => setSelectedPlan({ name: 'Pro Power Pack (30 Uses - Gemini 3.1 Pro & Local AI)', price: 399, uses: 30, engine: 'Gemini 3.1 Pro & Local AI' })}
+                className="w-full mt-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-sm rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5"
               >
                 <Sparkles className="w-4 h-4" />
                 <span>Choose 30 Uses • ₹399</span>

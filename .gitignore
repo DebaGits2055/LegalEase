@@ -32,6 +32,9 @@ revenue_ledger.json
 backend/legaltech.db
 backend/temp_uploads/
 backend/uploads/
+backend/vault_storage/*.enc
+backend/vault_storage/*.meta.json
+backend/vault_storage/*.json
 
 # Node & Frontend
 node_modules/
