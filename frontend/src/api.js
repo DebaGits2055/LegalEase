@@ -1,6 +1,6 @@
 import { supabase, isSupabaseConfigured, localStore } from './supabase';
 import { mongoDb, encryptContractText } from './mongo';
-import { auditDocumentWithGemini, chatWithLegalCounsel, extractClientText } from './gemini';
+import { auditDocumentWithGemini, chatWithLegalCounsel } from './gemini';
 
 export const API_BASE = '';
 export const getToken = () => localStorage.getItem('legalease_token');
@@ -373,59 +373,13 @@ export const api = {
       };
     }
 
-    // 1. Try FastAPI Backend (/api/documents/analyze) for hardware-accelerated AES-256 Vault & Local Engine
-    try {
-      let clientText = '';
-      try {
-        clientText = await extractClientText(file);
-      } catch (ocrErr) {
-        console.warn('Client text extraction notice:', ocrErr);
-      }
-
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('language', language);
-      formData.append('engine_mode', engineMode);
-      formData.append('is_ephemeral', isEphemeral ? 'true' : 'false');
-      if (clientText) {
-        formData.append('client_text', clientText);
-      }
-
-      const headers = {};
-      const token = getToken();
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      const res = await fetch('/api/documents/analyze', {
-        method: 'POST',
-        headers,
-        body: formData
-      });
-
-      if (res.ok) {
-        const contentType = res.headers.get('content-type') || '';
-        if (contentType.includes('application/json')) {
-          const backendData = await res.json();
-          if (backendData.success && backendData.is_legal && currentUser) {
-            const updatedUser = localStore.incrementAuditCount(currentUser);
-            backendData.doc_upload_count = updatedUser.doc_upload_count;
-            backendData.audit_limit = updatedUser.audit_limit;
-            backendData.is_subscribed = updatedUser.is_subscribed;
-          }
-          return backendData;
-        }
-      }
-    } catch (backendErr) {
-      console.log('Backend analyze notice, falling back to local client runner:', backendErr);
-    }
-
-    // 2. Client-side Resilience Fallback:
+    // 1. Seal document in the 256-Bit Encrypted Vault
     const vaultReceipt = await api.uploadEncryptedDocument(file, currentUser?.email);
+
+    // 2. Perform Intelligent Playbook Audit directly with Gemini 3.8 Flash / Pro
     const isProUser = currentUser?.subscription_plan?.includes('399') || currentUser?.subscription_plan?.includes('30') || currentUser?.subscription_plan?.includes('Pro');
     const res = await auditDocumentWithGemini(file, language, isProUser);
     res.vault_receipt = vaultReceipt;
-    res.engine = engineMode === 'local' ? 'Local Specialized Legal Engine (100% Private, Zero Cloud Retention)' : res.engine || 'Gemini Flash Enterprise Shield';
 
     if (res.success && res.is_legal && currentUser) {
       const updatedUser = localStore.incrementAuditCount(currentUser);
