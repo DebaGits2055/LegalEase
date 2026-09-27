@@ -144,6 +144,16 @@ def analyze_legal_document(
         ollama_response = None
         engine_used = "Local Specialized Legal Engine (100% Private, On-Premise)"
 
+        lang_lower = (language or "").lower()
+        if "bangla" in lang_lower or "bengali" in lang_lower or "bn" in lang_lower:
+            lang_rule = "BENGALI / BANGLA (বাংলা). CRITICAL INSTRUCTION: You MUST write the ENTIRE analysis, all headings, clause titles, issues, signer impacts, and attorney counter-drafts exclusively in Bengali using Bangla script (সম্পূর্ণ বিশ্লেষণটি খাঁটি বাংলা লিপিতে লিখুন). Do NOT output English words."
+        elif "hindi" in lang_lower or "hi" in lang_lower:
+            lang_rule = "HINDI (हिंदी). CRITICAL INSTRUCTION: You MUST write the ENTIRE analysis, all headings, clause titles, issues, signer impacts, and attorney counter-drafts exclusively in Hindi using Devanagari script (संपूर्ण विश्लेषण हिंदी देवनागरी लिपि में लिखें). Do NOT output English words."
+        elif "tamil" in lang_lower or "ta" in lang_lower:
+            lang_rule = "TAMIL (தமிழ்). CRITICAL INSTRUCTION: You MUST write the ENTIRE analysis, all headings, clause titles, issues, signer impacts, and attorney counter-drafts exclusively in Tamil script (முழு பகுப்பாய்வையும் தமிழில் எழுதவும்)."
+        else:
+            lang_rule = "ENGLISH"
+
         # Check if local Ollama is available
         if extracted_text and len(extracted_text) > 30:
             prompt = f"""
@@ -152,16 +162,28 @@ def analyze_legal_document(
             DOCUMENT TEXT:
             {extracted_text[:4000]}
             =========================================
-            Respond strictly in {language} following the 4-heading output format with Attorney Counter-Drafts.
+            OUTPUT LANGUAGE REQUIREMENT:
+            {lang_rule}
+            Respond strictly in the requested language following the standard 4-heading output format with Attorney Counter-Drafts.
             """
-            ollama_response = query_local_ollama(prompt)
+            raw_ollama = query_local_ollama(prompt)
+            if raw_ollama:
+                # Script verification: ensure requested non-English language didn't get ignored
+                if ("bangla" in lang_lower or "bengali" in lang_lower) and not re.search(r'[\u0980-\u09FF]', raw_ollama):
+                    # Ollama output English despite Bangla instruction; trigger localized statutory engine
+                    ollama_response = None
+                elif ("hindi" in lang_lower) and not re.search(r'[\u0900-\u097F]', raw_ollama):
+                    # Ollama output English despite Hindi instruction; trigger localized statutory engine
+                    ollama_response = None
+                else:
+                    ollama_response = raw_ollama
 
         if ollama_response:
             resp_text = ollama_response
-            engine_used = f"Local Ollama Model ({LOCAL_MODEL_NAME} • 100% Private)"
+            engine_used = f"Local Ollama Model ({get_available_local_model()} • 100% Private)"
             identified_category = category_info['title'] if category_info else "Corporate & Contract Law"
         else:
-            # High-Speed Built-In Specialized Legal Reasoning Engine
+            # High-Speed Built-In Specialized Legal Reasoning Engine with native language support
             local_result = run_local_legal_audit(
                 extracted_text, 
                 filename, 
@@ -247,36 +269,78 @@ def chat_with_legal_counsel(query: str, doc_temp_path: Optional[str] = None, lan
         except Exception:
             pass
 
+    lang_lower = (language or "").lower()
+    is_bn = "bangla" in lang_lower or "bengali" in lang_lower or "bn" in lang_lower
+    is_hi = "hindi" in lang_lower or "hi" in lang_lower
+
+    lang_instr = "English"
+    if is_bn:
+        lang_instr = "BENGALI (বাংলা). You MUST answer exclusively in Bengali language using Bangla script."
+    elif is_hi:
+        lang_instr = "HINDI (हिंदी). You MUST answer exclusively in Hindi language using Devanagari script."
+
     chat_prompt = f"""
     You are LegalEase Local AI Counsel — an expert contract attorney.
     Based on standard legal principles, Indian Contract Act 1872, RERA, and consumer statutes:
     Context: {doc_context if doc_context else 'General Contract Law Query'}
     User Question: {query}
-    Provide crisp, professional, actionable legal guidance strictly in {language}.
+    OUTPUT LANGUAGE: {lang_instr}
+    Provide crisp, professional, actionable legal guidance strictly in the requested language.
     """
 
     # 1. Try Local Ollama
     local_reply = query_local_ollama(chat_prompt)
     if local_reply:
-        return {
-            "success": True,
-            "response": local_reply
-        }
+        # Check script validity
+        if is_bn and re.search(r'[\u0980-\u09FF]', local_reply):
+            return {"success": True, "response": local_reply}
+        elif is_hi and re.search(r'[\u0900-\u097F]', local_reply):
+            return {"success": True, "response": local_reply}
+        elif not is_bn and not is_hi:
+            return {"success": True, "response": local_reply}
 
-    # 2. Built-in Local Counsel Guidance
+    # 2. Built-in Multilingual Legal Counsel Guidance
     clean_q = query.lower()
-    guidance = (
-        f"Legal Counsel Analysis ({language}): Regarding your query '{query}', "
-        "under Section 27 of the Indian Contract Act 1872, any agreement that restrains anyone from exercising "
-        "a lawful profession, trade, or business is void to that extent. "
-        "Ensure all covenants include mutual bilateral notice periods (minimum 30 days) and reciprocal liability caps."
-    )
-    if "non-compete" in clean_q or "restraint" in clean_q:
-        guidance = "Non-Compete Doctrine: Under Section 27 of the Indian Contract Act 1872, post-termination non-compete clauses are void ab initio in India. An employer cannot stop you from joining a competitor after your employment ends, regardless of what the contract says."
-    elif "lease" in clean_q or "rent" in clean_q or "deposit" in clean_q:
-        guidance = "Tenancy Law Doctrine: Security deposits must be refunded within the agreed timeframe after deductions for documented damages only. Unilateral forfeiture without third-party repair estimates violates standard lease jurisprudence."
-    elif "ip" in clean_q or "invention" in clean_q or "side project" in clean_q:
-        guidance = "IP Assignment Doctrine: Companies can only claim ownership of intellectual property created during work hours utilizing company resources and within your designated job duties. Broad clauses capturing off-hour side projects are unenforceable."
+    if is_bn:
+        # BENGALI (বাংলা)
+        guidance = (
+            f"আইনি পরামর্শ ({language}): আপনার প্রশ্ন '{query}' প্রসঙ্গে, "
+            "ভারতীয় চুক্তি আইন ১৮৭২-এর ধারা ২৭ অনুযায়ী, যেকোনো চুক্তি যা কোনো ব্যক্তিকে তার বৈধ পেশা, ব্যবসা বা বাণিজ্য অনুশীলনে বাধা দেয়, তা সম্পূর্ণ বেআইনি এবং বাতিল। "
+            "চুক্তির সমস্ত শর্তাবলীতে কমপক্ষে ৩০ দিনের নোটিশ পিরিয়ড এবং উভয় পক্ষের জন্য পারস্পরিক দায়বদ্ধতার সীমা থাকা নিশ্চিত করুন।"
+        )
+        if "non-compete" in clean_q or "প্রতিযোগিতা" in clean_q or "restraint" in clean_q:
+            guidance = "প্রতিযোগিতা নিষেধাজ্ঞা নীতি (Non-Compete Doctrine): ভারতীয় চুক্তি আইন ১৮৭২-এর ধারা ২৭ অনুযায়ী, চাকরি পরবর্তী সবধরনের প্রতিযোগিতা নিষেধাজ্ঞা সম্পূর্ণ বাতিল (void ab initio)। চুক্তিপত্রে যা-ই লেখা থাকুক না কেন, চাকরি ছাড়ার পর কোনো নিয়োগকর্তা আপনাকে কোনো প্রতিদ্বন্দ্বী প্রতিষ্ঠানে যোগদান করতে আইনত বাধা দিতে পারে না।"
+        elif "lease" in clean_q or "rent" in clean_q or "ভাড়া" in clean_q or "deposit" in clean_q or "জামানত" in clean_q:
+            guidance = "ভাড়াটিয়া আইন নীতি (Tenancy Law): বাড়ি হস্তান্তরের পর চুক্তি অনুযায়ী নির্দিষ্ট সময়ের মধ্যে সিকিউরিটি ডিপোজিট ফেরত দিতে হবে। স্বাধীন ভাউচার ছাড়া একতরফাভাবে জামানতের অর্থ বাজেয়াপ্ত করা আইনত দণ্ডনীয়।"
+        elif "ip" in clean_q or "invention" in clean_q or "প্রজেক্ট" in clean_q:
+            guidance = "বৌদ্ধিক সম্পত্তি নীতি (IP Doctrine): নিয়োগকর্তা শুধুমাত্র কাজের সময় এবং কোম্পানির সরঞ্জাম ব্যবহার করে প্রস্তুত ফলাফলের স্বত্ব দাবি করতে পারেন। ব্যক্তিগত সময়ে প্রস্তুত স্বাধীন কাজের ওপর কোম্পানির কোনো আইনি অধিকার থাকে না।"
+    elif is_hi:
+        # HINDI (हिंदी)
+        guidance = (
+            f"कानूनी सलाह ({language}): आपके प्रश्न '{query}' के संदर्भ में, "
+            "भारतीय अनुबंध अधिनियम 1872 की धारा 27 के तहत, कोई भी समझौता जो किसी भी व्यक्ति को वैध व्यवसाय या पेशा करने से रोकता है, वह कानूनी रूप से अमान्य है। "
+            "सुनिश्चित करें कि सभी खंडों में कम से कम 30 दिनों की नोटिस अवधि और दोनों पक्षों के लिए पारस्परिक देनदारी की सीमा तय हो।"
+        )
+        if "non-compete" in clean_q or "प्रतिस्पर्धा" in clean_q or "restraint" in clean_q:
+            guidance = "गैर-प्रतिस्पर्धा सिद्धांत (Non-Compete Doctrine): भारतीय अनुबंध अधिनियम 1872 की धारा 27 के अनुसार, रोजगार समाप्ति के बाद का गैर-प्रतिस्पर्धा खंड पूरी तरह शून्य (void ab initio) होता है। अनुबंध में कुछ भी लिखा हो, नौकरी छोड़ने के बाद कोई भी नियोक्ता आपको प्रतिस्पर्धी कंपनी में जाने से कानूनी रूप से नहीं रोक सकता।"
+        elif "lease" in clean_q or "rent" in clean_q or "किराया" in clean_q or "deposit" in clean_q:
+            guidance = "किरायेदारी कानून सिद्धांत (Tenancy Law): परिसर खाली करने के बाद सहमत समय सीमा के भीतर सुरक्षा जमा राशि (Security Deposit) लौटाई जानी चाहिए। बिना उचित बिलों के मनमाने ढंग से जमा राशि जब्त करना कानूनी नियमों का उल्लंघन है।"
+        elif "ip" in clean_q or "invention" in clean_q or "प्रोजेक्ट" in clean_q:
+            guidance = "बौद्धिक संपदा सिद्धांत (IP Doctrine): कंपनियां केवल काम के घंटों के दौरान और कंपनी के संसाधनों से बनाई गई बौद्धिक संपदा पर ही अधिकार मांग सकती हैं। व्यक्तिगत समय में किए गए निजी प्रोजेक्ट्स पर कंपनी का कोई कानूनी अधिकार नहीं होता।"
+    else:
+        # ENGLISH (Standard)
+        guidance = (
+            f"Legal Counsel Analysis ({language}): Regarding your query '{query}', "
+            "under Section 27 of the Indian Contract Act 1872, any agreement that restrains anyone from exercising "
+            "a lawful profession, trade, or business is void to that extent. "
+            "Ensure all covenants include mutual bilateral notice periods (minimum 30 days) and reciprocal liability caps."
+        )
+        if "non-compete" in clean_q or "restraint" in clean_q:
+            guidance = "Non-Compete Doctrine: Under Section 27 of the Indian Contract Act 1872, post-termination non-compete clauses are void ab initio in India. An employer cannot stop you from joining a competitor after your employment ends, regardless of what the contract says."
+        elif "lease" in clean_q or "rent" in clean_q or "deposit" in clean_q:
+            guidance = "Tenancy Law Doctrine: Security deposits must be refunded within the agreed timeframe after deductions for documented damages only. Unilateral forfeiture without third-party repair estimates violates standard lease jurisprudence."
+        elif "ip" in clean_q or "invention" in clean_q or "side project" in clean_q:
+            guidance = "IP Assignment Doctrine: Companies can only claim ownership of intellectual property created during work hours utilizing company resources and within your designated job duties. Broad clauses capturing off-hour side projects are unenforceable."
 
     return {
         "success": True,

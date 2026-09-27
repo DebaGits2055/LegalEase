@@ -237,51 +237,243 @@ def run_local_legal_audit(
     # Ensure bounds
     health_score = max(20, min(98, health_score))
     
-    # Build Structured Markdown Report
-    report_lines = [
-        f"## 🚨 CRITICAL RED FLAGS & RISK LEVELS (HIGHLIGHTED FIRST)",
-    ]
-    
-    if not red_flags:
-        report_lines.append("- [🟢 LOW RISK]: Standard Fair Playbook Alignment")
-        report_lines.append("  • Issue: No predatory or statutory violation clauses detected.")
-        report_lines.append("  • Signer Impact: Document exhibits balanced mutual covenants.")
-    else:
-        for rf in red_flags:
-            badge = "🔴 HIGH RISK" if rf["severity"] == "HIGH" else "🟡 MEDIUM RISK"
-            report_lines.append(f"- [{badge}]: {rf['clause']}")
-            report_lines.append(f"  • Issue: {rf['issue']}")
-            report_lines.append(f"  • Signer Impact: {rf['signer_impact']}")
-            report_lines.append(f"  • Attorney Counter-Draft: {rf['counter_clause']}")
+    # Language detection
+    lang_lower = (language or "").lower()
+    is_bn = "bangla" in lang_lower or "bengali" in lang_lower or "bn" in lang_lower
+    is_hi = "hindi" in lang_lower or "hi" in lang_lower
 
-    verdict = "Significant contract risks detected requiring immediate redline negotiation." if health_score < 70 else "Fair contract terms with standard boilerplate provisions."
-    
-    report_lines.extend([
-        "",
-        "## 📊 EXECUTIVE SUMMARY & COMPLIANCE SCORE",
-        f"- Document Type: {category['title']} ({filename})",
-        f"- Overall Health Score: {health_score}/100 • {'High Risk Trap Detected' if health_score < 60 else 'Moderate Terms' if health_score < 80 else 'Safe & Balanced'}",
-        f"- Executive Verdict: {verdict}",
-        f"- Applicable Statutory Framework: {', '.join(category['statutes'])}",
-        "",
-        "## 🛡️ 4-PILLAR PLAYBOOK CHECK",
-        f"- Non-Compete & Restraint of Trade: {'Flagged Unenforceable' if any('Non-Compete' in rf['clause'] for rf in red_flags) else 'Pass - Standard Covenants'}",
-        f"- IP Assignment Scope: {'Flagged Overbroad' if any('IP' in rf['clause'] for rf in red_flags) else 'Pass - Reasonable Scope'}",
-        f"- Termination & Notice Cure Periods: {'Flagged Unilateral' if any('Termination' in rf['clause'] for rf in red_flags) else 'Pass - Bilateral 30-Day Notice'}",
-        f"- Indemnification & Liability Caps: {'Flagged Unlimited' if any('Liability' in rf['clause'] for rf in red_flags) else 'Pass - Balanced Exposure'}",
-        "",
-        "## 📝 ACTIONABLE NEXT STEPS BEFORE SIGNING",
-        "1. Request written removal or strike-through of all High Risk clauses highlighted above.",
-        "2. Substitute the provided 'Attorney Counter-Draft' language into Section revisions.",
-        "3. Insist on a mutual bilateral liability cap before signing or remitting advance funds."
-    ])
+    # Localized Category Titles & Headings
+    if is_bn:
+        # BENGALI (বাংলা)
+        category_title_map = {
+            "PROPERTY_REAL_ESTATE": "সম্পত্তি ও আবাসন আইন (Property & Real Estate)",
+            "MEDICAL_HEALTHCARE": "চিকিৎসা ও স্বাস্থ্যসেবা আইন (Medical & Healthcare)",
+            "CRIMINAL_INVESTIGATION": "ফৌজদারি তদন্ত ও আইন প্রয়োগ (Criminal Law)",
+            "CORPORATE_EMPLOYMENT": "কর্পোরেট, বাণিজ্যিক ও শ্রম আইন (Corporate & Employment)",
+            "ESTATE_NOTARIAL": "উইল, আমমোক্তারনামা ও হলফনামা (Estate & Affidavits)"
+        }
+        cat_title = category_title_map.get(category_key, category["title"])
+        
+        report_lines = [
+            "## 🚨 ঝুঁকিপূর্ণ শর্তাবলী ও ঝুঁকি স্তর (প্রথমে প্রদর্শিত)",
+        ]
+        if not red_flags:
+            report_lines.append("- [🟢 নিম্ন ঝুঁকি]: স্ট্যান্ডার্ড ফেয়ার প্লেবুকের সাথে সামঞ্জস্যপূর্ণ")
+            report_lines.append("  • সমস্যা: কোনো অন্যায্য বা সংবিধিবহির্ভূত শর্ত পাওয়া যায়নি।")
+            report_lines.append("  • স্বাক্ষরকারীর প্রভাব: নথিতে উভয় পক্ষের জন্য ভারসাম্যপূর্ণ শর্তাবলী বিদ্যমান।")
+        else:
+            bn_clause_map = {
+                "Post-Termination Non-Compete Covenant": {
+                    "clause": "চাকরি পরবর্তী অন্যায় প্রতিযোগিতা নিষেধাজ্ঞা (Section 27 Non-Compete)",
+                    "issue": "চাকরি ছাড়ার পর কোনো প্রতিদ্বন্দ্বী সংস্থায় কাজ করতে নিষেধ করে। ভারতীয় চুক্তি আইন ১৮৭২-এর ধারা ২৭ অনুযায়ী, চাকরি পরবর্তী সবধরনের প্রতিযোগিতা নিষেধাজ্ঞা সম্পূর্ণ অবৈধ এবং বাতিল (void ab initio)।",
+                    "impact": "চুক্তিতে স্বাক্ষরকারী অন্যায় আইনি নোটিশের হুমকির মুখে পড়েন, যদিও আদালতে এই ধারা সম্পূর্ণ অকার্যকর।",
+                    "counter": "প্রস্তাবিত বিকল্প শর্ত: 'কর্মচারী গোপনীয় তথ্যের সুরক্ষা বজায় রাখবেন; তবে ভারতীয় চুক্তি আইনের ধারা ২৭ অনুযায়ী আলাদা হওয়ার পর তার আইনসঙ্গত কর্মসংস্থানের অধিকার অক্ষুণ্ণ থাকবে।'"
+                },
+                "Overbroad IP & Side-Project Assignment": {
+                    "clause": "অতিরিক্ত বিস্তৃত বৌদ্ধিক সম্পত্তি স্বত্ব (Overbroad IP Assignment)",
+                    "issue": "ব্যক্তিগত সময়ে বা ব্যক্তিগত ডিভাইসে তৈরি যেকোনো ধারণা বা স্বাধীন প্রজেক্টের ওপরও কোম্পানির একচ্ছত্র মালিকানা দাবি করে।",
+                    "impact": "ব্যক্তিগত ওপেন সোর্স প্রজেক্ট, সফটওয়্যার বা নিজস্ব উদ্ভাবনের আইনি অধিকার হারানোর তীব্র ঝুঁকি তৈরি হয়।",
+                    "counter": "প্রস্তাবিত বিকল্প শর্ত: 'কোম্পানির অধিকার কেবল নির্দিষ্ট কাজের সময় এবং কোম্পানির সরঞ্জাম ব্যবহার করে তৈরি ফলাফলের মধ্যেই সীমাবদ্ধ থাকবে।'"
+                },
+                "Unilateral Immediate Termination Without Cure Period": {
+                    "clause": "একতরফা অবিলম্বে চুক্তি বাতিলকরণ (Unilateral Termination)",
+                    "issue": "ত্রুটি সংশোধনের সুযোগ বা উপযুক্ত নোটিশ ছাড়াই অবিলম্বে চুক্তি বাতিলের একতরফা ক্ষমতা দেয়।",
+                    "impact": "হঠাৎ করে কোনো পূর্ব নোটিশ বা নিজেকে সংশোধনের সুযোগ না পেয়ে কাজ বা আয় হারানোর আশঙ্কা।",
+                    "counter": "প্রস্তাবিত বিকল্প শর্ত: 'যেকোনো পক্ষ অন্তত ৩০ দিনের লিখিত নোটিশ এবং যেকোনো লঙ্ঘনের জন্য ১৫ দিনের সংশোধনের সুযোগ প্রদান সাপেক্ষে চুক্তি বাতিল করতে পারে।'"
+                },
+                "Unlimited Personal Indemnification & Liability Exposure": {
+                    "clause": "সীমাহীন ব্যক্তিগত দায় ও ক্ষতিপূরণ (Unlimited Liability Exposure)",
+                    "issue": "পারস্পরিক সুরক্ষা ছাড়াই একতরফাভাবে সম্পূর্ণ আর্থিক দায় বা ক্ষতিপূরণের বোঝা চাপিয়ে দেয়।",
+                    "impact": "যেকোনো আইনি বিরোধের ক্ষেত্রে মোট অর্জিত পারিশ্রমিকের চেয়ে বহুগুণ বেশি ব্যক্তিগত আর্থিক ক্ষতির আশঙ্কা।",
+                    "counter": "প্রস্তাবিত বিকল্প শর্ত: 'এই চুক্তির অধীনে কোনো পক্ষের মোট দায় পূর্ববর্তী ৩ (তিন) মাসে প্রদত্ত পারিশ্রমিকের সমপরিমাণ অর্থ পর্যন্ত সীমাবদ্ধ থাকবে।'"
+                },
+                "Arbitrary Security Deposit Deductions": {
+                    "clause": "অন্যায় সিকিউরিটি ডিপোজিট কর্তন (Arbitrary Deposit Forfeiture)",
+                    "issue": "প্রমাণিত বিল বা ইনভয়েস ছাড়াই বাড়িওয়ালাকে জামানতের অর্থ আটকে রাখার অযৌক্তিক ক্ষমতা দেয়।",
+                    "impact": "ভাড়া শেষে পুরো অগ্রিম জামানতের অর্থ হারানোর তীব্র ঝুঁকি।",
+                    "counter": "প্রস্তাবিত বিকল্প শর্ত: 'বাড়ি হস্তান্তরের ৭ দিনের মধ্যে স্বাধীন ঠিকাদারের ভাউচার দ্বারা প্রমাণিত ক্ষতি ছাড়া বাকি সমস্ত সিকিউরিটি ডিপোজিট ফেরত দিতে হবে।'"
+                },
+                "Unlawful Negligence & Malpractice Waiver": {
+                    "clause": "চিকিৎসা অবহেলার দায়মুক্তি শর্ত (Unlawful Negligence Waiver)",
+                    "issue": "হাসপাতাল বা চিকিৎসকের গুরুতর অবহেলার ক্ষেত্রেও তাদের সবধরনের আইনি দায়মুক্তি দেওয়ার চেষ্টা করে।",
+                    "impact": "ভুল চিকিৎসার কারণে রোগী বা তার পরিবার ভোক্তা ফোরাম বা আইনের আশ্রয় নেওয়া থেকে বঞ্চিত হতে পারে।",
+                    "counter": "প্রস্তাবিত বিকল্প শর্ত: 'জাতীয় মেডিকেল কমিশনের নির্দেশিকা এবং ভোক্তা সুরক্ষা আইনের অধীনে গুরুতর অবহেলার ক্ষেত্রে কোনো দায়মুক্তি প্রযোজ্য হবে না।'"
+                }
+            }
+            for rf in red_flags:
+                badge = "🔴 উচ্চ ঝুঁকি (HIGH RISK)" if rf["severity"] == "HIGH" else "🟡 মাঝারি ঝুঁকি (MEDIUM RISK)"
+                mapped = bn_clause_map.get(rf["clause"], {
+                    "clause": rf["clause"],
+                    "issue": rf["issue"],
+                    "impact": rf["signer_impact"],
+                    "counter": rf["counter_clause"]
+                })
+                report_lines.append(f"- [{badge}]: {mapped['clause']}")
+                report_lines.append(f"  • সমস্যা: {mapped['issue']}")
+                report_lines.append(f"  • স্বাক্ষরকারীর প্রভাব: {mapped['impact']}")
+                report_lines.append(f"  • আইনজীবীর বিকল্প খসড়া (Attorney Counter-Draft): {mapped['counter']}")
+
+        verdict_bn = "তাৎক্ষণিক আইনি আলোচনার প্রয়োজন এমন গুরুত্বপূর্ণ ঝুঁকি চিহ্নিত হয়েছে।" if health_score < 70 else "স্ট্যান্ডার্ড আইনি শর্তাবলী সহ ভারসাম্যপূর্ণ চুক্তি।"
+        status_text = "উচ্চ ঝুঁকির ফাঁদ চিহ্নিত" if health_score < 60 else "মাঝারি ঝুঁকি" if health_score < 80 else "নিরাপদ ও ভারসাম্যপূর্ণ"
+
+        report_lines.extend([
+            "",
+            "## 📊 নির্বাহী সারাংশ এবং সম্মতি স্কোর (EXECUTIVE SUMMARY)",
+            f"- নথির ধরন: {cat_title} ({filename})",
+            f"- সার্বিক সুরক্ষা স্কোর: {health_score}/100 • {status_text}",
+            f"- নির্বাহী সিদ্ধান্ত: {verdict_bn}",
+            f"- প্রযোজ্য সংবিধিবদ্ধ আইন: {', '.join(category['statutes'])}",
+            "",
+            "## 🛡️ ৪-স্তম্ভ প্লেবুক নিরীক্ষা (4-PILLAR PLAYBOOK CHECK)",
+            f"- প্রতিযোগিতা নিষেধাজ্ঞা (Non-Compete): {'অবৈধ ও বাতিল ঘোষিত (ধারা ২৭)' if any('Non-Compete' in rf['clause'] for rf in red_flags) else 'উত্তীর্ণ - স্ট্যান্ডার্ড নিয়ম'}",
+            f"- বৌদ্ধিক সম্পত্তি পরিসীমা (IP Scope): {'অতিরিক্ত বিস্তৃত' if any('IP' in rf['clause'] for rf in red_flags) else 'উত্তীর্ণ - যুক্তিযুক্ত পরিধি'}",
+            f"- চুক্তি বাতিল নোটিশ (Termination): {'একতরফা বাতিলকরণ' if any('Termination' in rf['clause'] for rf in red_flags) else 'উত্তীর্ণ - দ্বিপাক্ষিক ৩০ দিনের নোটিশ'}",
+            f"- দায়বদ্ধতার সীমা (Liability): {'সীমাহীন দায় চিহ্নিত' if any('Liability' in rf['clause'] for rf in red_flags) else 'উত্তীর্ণ - ভারসাম্যপূর্ণ দায়'}",
+            "",
+            "## 📝 স্বাক্ষরের পূর্বে করণীয় পদক্ষেপ (ACTIONABLE NEXT STEPS)",
+            "১. উপরে চিহ্নিত সমস্ত উচ্চ ঝুঁকির শর্তাবলী বাদ দেওয়ার জন্য লিখিত অনুরোধ জানান।",
+            "২. চুক্তির সংশোধিত খসড়ায় উপরে প্রদত্ত 'আইনজীবীর বিকল্প খসড়া (Attorney Counter-Draft)' যুক্ত করুন।",
+            "৩. অগ্রিম অর্থ প্রদান বা স্বাক্ষর করার আগে উভয় পক্ষের জন্য পারস্পরিক দায়বদ্ধতার সীমা নিশ্চিত করুন।"
+        ])
+
+    elif is_hi:
+        # HINDI (हिंदी)
+        category_title_map = {
+            "PROPERTY_REAL_ESTATE": "संपत्ति एवं अचल संपत्ति कानून (Property & Real Estate)",
+            "MEDICAL_HEALTHCARE": "चिकित्सा एवं स्वास्थ्य सेवा कानून (Medical & Healthcare)",
+            "CRIMINAL_INVESTIGATION": "आपराधिक जांच एवं कानून प्रवर्तन (Criminal Law)",
+            "CORPORATE_EMPLOYMENT": "कॉर्पोरेट, वाणिज्यिक एवं रोजगार कानून (Corporate & Employment)",
+            "ESTATE_NOTARIAL": "वसीयत, पावर ऑफ अटॉर्नी एवं शपथ पत्र (Estate & Affidavits)"
+        }
+        cat_title = category_title_map.get(category_key, category["title"])
+
+        report_lines = [
+            "## 🚨 महत्वपूर्ण जोखिम और चेतावनी स्तर (CRITICAL RED FLAGS)",
+        ]
+        if not red_flags:
+            report_lines.append("- [🟢 कम जोखिम]: मानक निष्पक्ष कानूनी दिशानिर्देशों के अनुरूप")
+            report_lines.append("  • समस्या: कोई अनुचित या असंवैधानिक शर्तें नहीं पाई गईं।")
+            report_lines.append("  • प्रभाव: अनुबंध में दोनों पक्षों के लिए संतुलित शर्तें मौजूद हैं।")
+        else:
+            hi_clause_map = {
+                "Post-Termination Non-Compete Covenant": {
+                    "clause": "नौकरी समाप्ति के बाद गैर-प्रतिस्पर्धा खंड (Section 27 Non-Compete)",
+                    "issue": "नौकरी छोड़ने के बाद प्रतिस्पर्धी कंपनियों या ग्राहकों के साथ काम करने पर रोक लगाता है। भारतीय अनुबंध अधिनियम 1872 की धारा 27 के तहत, नौकरी के बाद का गैर-प्रतिस्पर्धा खंड पूरी तरह अमान्य और शून्य (void ab initio) है।",
+                    "impact": "हस्ताक्षरकर्ता को अनुचित कानूनी नोटिस या अनुभव प्रमाण पत्र रोके जाने का डर रहता है, जबकि यह अदालत में नहीं टिक सकता।",
+                    "counter": "प्रस्तावित प्रति-शर्त (Attorney Counter-Draft): 'कर्मचारी व्यापार रहस्यों की गोपनीयता का पालन करेगा; बशर्ते कि भारतीय अनुबंध अधिनियम की धारा 27 के तहत अलग होने के बाद उसके वैध रोजगार के अधिकार पर कोई प्रतिबंध नहीं होगा।'"
+                },
+                "Overbroad IP & Side-Project Assignment": {
+                    "clause": "अति-विस्तृत बौद्धिक संपदा अधिकार (Overbroad IP Assignment)",
+                    "issue": "व्यक्तिगत समय और व्यक्तिगत उपकरणों पर बनाए गए स्वतंत्र विचारों और प्रोजेक्ट्स पर भी कंपनी का स्वामित्व मांगता है।",
+                    "impact": "व्यक्तिगत ओपन-सोर्स प्रोजेक्ट्स, सॉफ्टवेयर या स्वतंत्र आविष्कारों के अधिकार खोने का गंभीर जोखिम।",
+                    "counter": "प्रस्तावित प्रति-शर्त (Attorney Counter-Draft): 'कंपनी का अधिकार केवल कंपनी के कामकाजी घंटों और कंपनी के संसाधनों से तैयार किए गए कार्यों तक ही सीमित रहेगा।'"
+                },
+                "Unilateral Immediate Termination Without Cure Period": {
+                    "clause": "एकतरफा तत्काल अनुबंध समाप्ति (Unilateral Termination)",
+                    "issue": "गलती सुधारने का अवसर दिए बिना या बिना उचित नोटिस के अनुबंध को तुरंत रद्द करने का एकतरफा अधिकार देता है।",
+                    "impact": "बिना किसी पूर्व सूचना या सुधार के अवसर के अचानक रोजगार या आय खोने का खतरा।",
+                    "counter": "प्रस्तावित प्रति-शर्त (Attorney Counter-Draft): 'कोई भी पक्ष कम से कम 30 दिनों का पूर्व लिखित नोटिस देकर और किसी भी सुधारे जा सकने वाले उल्लंघन के लिए 15 दिनों का समय देकर ही अनुबंध समाप्त कर सकता है।'"
+                },
+                "Unlimited Personal Indemnification & Liability Exposure": {
+                    "clause": "असीमित व्यक्तिगत देनदारी व दायित्व (Unlimited Liability Exposure)",
+                    "issue": "बिना किसी पारस्परिक सुरक्षा के तीसरे पक्ष के दावों या नुकसान का असीमित वित्तीय बोझ व्यक्तिगत रूप से डालता है।",
+                    "impact": "किसी भी विवाद की स्थिति में कुल अनुबंध शुल्क से कहीं अधिक भारी व्यक्तिगत वित्तीय नुकसान।",
+                    "counter": "प्रस्तावित प्रति-शर्त (Attorney Counter-Draft): 'इस अनुबंध से उत्पन्न किसी भी पक्ष की कुल देनदारी पिछले 3 (तीन) महीनों में प्राप्त कुल शुल्क तक सीमित होगी।'"
+                },
+                "Arbitrary Security Deposit Deductions": {
+                    "clause": "सुरक्षा जमा (Security Deposit) की मनमानी कटौती",
+                    "issue": "मकान मालिक को बिना किसी सत्यापित बिल या इनवॉइस के पूरी सुरक्षा जमा राशि जब्त करने की मनमानी शक्ति देता है।",
+                    "impact": "किराया अवधि समाप्त होने पर पूरी अग्रिम जमा राशि खोने का गंभीर जोखिम।",
+                    "counter": "प्रस्तावित प्रति-शर्त (Attorney Counter-Draft): 'मकान खाली करने के 7 दिनों के भीतर प्रमाणित बिलों के आधार पर हुई वास्तविक क्षति को छोड़कर पूरी सुरक्षा जमा राशि लौटाई जाएगी।'"
+                },
+                "Unlawful Negligence & Malpractice Waiver": {
+                    "clause": "चिकित्सीय लापरवाही पर अवैध दायित्व मुक्ति (Medical Negligence Waiver)",
+                    "issue": "अस्पताल या डॉक्टर की गंभीर लापरवाही के मामलों में भी जवाबदेही से बचने की अनुचित कोशिश करता है।",
+                    "impact": "गलत इलाज की स्थिति में मरीज या परिजनों को उपभोक्ता फोरम में न्याय मांगने से वंचित करने का प्रयास।",
+                    "counter": "प्रस्तावित प्रति-शर्त (Attorney Counter-Draft): 'उपभोक्ता संरक्षण अधिनियम और मेडिकल काउंसिल के नियमों के तहत गंभीर लापरवाही के खिलाफ कोई छूट लागू नहीं होगी।'"
+                }
+            }
+            for rf in red_flags:
+                badge = "🔴 उच्च जोखिम (HIGH RISK)" if rf["severity"] == "HIGH" else "🟡 मध्यम जोखिम (MEDIUM RISK)"
+                mapped = hi_clause_map.get(rf["clause"], {
+                    "clause": rf["clause"],
+                    "issue": rf["issue"],
+                    "impact": rf["signer_impact"],
+                    "counter": rf["counter_clause"]
+                })
+                report_lines.append(f"- [{badge}]: {mapped['clause']}")
+                report_lines.append(f"  • समस्या: {mapped['issue']}")
+                report_lines.append(f"  • हस्ताक्षरकर्ता पर प्रभाव: {mapped['impact']}")
+                report_lines.append(f"  • वकील का प्रति-प्रारूप (Attorney Counter-Draft): {mapped['counter']}")
+
+        verdict_hi = "तत्काल बातचीत और संशोधन की आवश्यकता वाले महत्वपूर्ण जोखिम पाए गए हैं।" if health_score < 70 else "मानक कानूनी प्रावधानों के साथ उचित अनुबंध शर्तें।"
+        status_text_hi = "उच्च जोखिम चिह्नित" if health_score < 60 else "मध्यम जोखिम" if health_score < 80 else "सुरक्षित और संतुलित"
+
+        report_lines.extend([
+            "",
+            "## 📊 कार्यकारी सारांश और अनुपालन स्कोर (EXECUTIVE SUMMARY)",
+            f"- दस्तावेज़ का प्रकार: {cat_title} ({filename})",
+            f"- कुल सुरक्षा स्कोर: {health_score}/100 • {status_text_hi}",
+            f"- कार्यकारी निर्णय: {verdict_hi}",
+            f"- लागू कानूनी ढांचा: {', '.join(category['statutes'])}",
+            "",
+            "## 🛡️ 4-स्तंभ कानूनी समीक्षा (4-PILLAR PLAYBOOK CHECK)",
+            f"- गैर-प्रतिस्पर्धा खंड (Non-Compete): {'अमान्य एवं शून्य (धारा 27)' if any('Non-Compete' in rf['clause'] for rf in red_flags) else 'पास - मानक प्रावधान'}",
+            f"- बौद्धिक संपदा दायरा (IP Scope): {'अत्यधिक विस्तृत' if any('IP' in rf['clause'] for rf in red_flags) else 'पास - उचित दायरा'}",
+            f"- समाप्ति एवं नोटिस अवधि (Termination): {'एकतरफा समाप्ति' if any('Termination' in rf['clause'] for rf in red_flags) else 'पास - द्विपक्षीय 30 दिन का नोटिस'}",
+            f"- देनदारी व क्षतिपूर्ति सीमा (Liability): {'असीमित देनदारी' if any('Liability' in rf['clause'] for rf in red_flags) else 'पास - संतुलित देनदारी'}",
+            "",
+            "## 📝 हस्ताक्षर करने से पहले आवश्यक कदम (ACTIONABLE NEXT STEPS)",
+            "१. ऊपर बताए गए सभी उच्च जोखिम वाले खंडों को हटाने का लिखित अनुरोध करें।",
+            "२. अनुबंध के संशोधित प्रारूप में ऊपर दिए गए 'वकील के प्रति-प्रारूप (Attorney Counter-Draft)' को शामिल करें।",
+            "३. अग्रिम भुगतान करने या हस्ताक्षर करने से पहले दोनों पक्षों के लिए पारस्परिक देयता सीमा तय करें।"
+        ])
+
+    else:
+        # ENGLISH (Standard)
+        report_lines = [
+            f"## 🚨 CRITICAL RED FLAGS & RISK LEVELS (HIGHLIGHTED FIRST)",
+        ]
+        if not red_flags:
+            report_lines.append("- [🟢 LOW RISK]: Standard Fair Playbook Alignment")
+            report_lines.append("  • Issue: No predatory or statutory violation clauses detected.")
+            report_lines.append("  • Signer Impact: Document exhibits balanced mutual covenants.")
+        else:
+            for rf in red_flags:
+                badge = "🔴 HIGH RISK" if rf["severity"] == "HIGH" else "🟡 MEDIUM RISK"
+                report_lines.append(f"- [{badge}]: {rf['clause']}")
+                report_lines.append(f"  • Issue: {rf['issue']}")
+                report_lines.append(f"  • Signer Impact: {rf['signer_impact']}")
+                report_lines.append(f"  • Attorney Counter-Draft: {rf['counter_clause']}")
+
+        verdict = "Significant contract risks detected requiring immediate redline negotiation." if health_score < 70 else "Fair contract terms with standard boilerplate provisions."
+        
+        report_lines.extend([
+            "",
+            "## 📊 EXECUTIVE SUMMARY & COMPLIANCE SCORE",
+            f"- Document Type: {category['title']} ({filename})",
+            f"- Overall Health Score: {health_score}/100 • {'High Risk Trap Detected' if health_score < 60 else 'Moderate Terms' if health_score < 80 else 'Safe & Balanced'}",
+            f"- Executive Verdict: {verdict}",
+            f"- Applicable Statutory Framework: {', '.join(category['statutes'])}",
+            "",
+            "## 🛡️ 4-PILLAR PLAYBOOK CHECK",
+            f"- Non-Compete & Restraint of Trade: {'Flagged Unenforceable' if any('Non-Compete' in rf['clause'] for rf in red_flags) else 'Pass - Standard Covenants'}",
+            f"- IP Assignment Scope: {'Flagged Overbroad' if any('IP' in rf['clause'] for rf in red_flags) else 'Pass - Reasonable Scope'}",
+            f"- Termination & Notice Cure Periods: {'Flagged Unilateral' if any('Termination' in rf['clause'] for rf in red_flags) else 'Pass - Bilateral 30-Day Notice'}",
+            f"- Indemnification & Liability Caps: {'Flagged Unlimited' if any('Liability' in rf['clause'] for rf in red_flags) else 'Pass - Balanced Exposure'}",
+            "",
+            "## 📝 ACTIONABLE NEXT STEPS BEFORE SIGNING",
+            "1. Request written removal or strike-through of all High Risk clauses highlighted above.",
+            "2. Substitute the provided 'Attorney Counter-Draft' language into Section revisions.",
+            "3. Insist on a mutual bilateral liability cap before signing or remitting advance funds."
+        ])
 
     report_text = "\n".join(report_lines)
 
     return {
         "success": True,
         "is_legal": True,
-        "category": category["title"],
+        "category": cat_title if (is_bn or is_hi) else category["title"],
         "category_key": category_key,
         "health_score": health_score,
         "report": report_text,

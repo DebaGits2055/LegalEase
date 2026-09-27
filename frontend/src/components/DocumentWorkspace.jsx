@@ -83,10 +83,18 @@ function FormattedLegalAudit({ reportText }) {
           rawTrimmed.toUpperCase().includes('RED FLAGS') || 
           rawTrimmed.toUpperCase().includes('EXECUTIVE SUMMARY') || 
           rawTrimmed.toUpperCase().includes('4-PILLAR') || 
-          rawTrimmed.toUpperCase().includes('NEXT STEPS')
+          rawTrimmed.toUpperCase().includes('NEXT STEPS') ||
+          rawTrimmed.includes('ঝুঁকিপূর্ণ শর্তাবলী') ||
+          rawTrimmed.includes('নির্বাহী সারাংশ') ||
+          rawTrimmed.includes('৪-স্তম্ভ') ||
+          rawTrimmed.includes('করণীয় পদক্ষেপ') ||
+          rawTrimmed.includes('महत्वपूर्ण जोखिम') ||
+          rawTrimmed.includes('कार्यकारी सारांश') ||
+          rawTrimmed.includes('4-स्तंभ') ||
+          rawTrimmed.includes('आवश्यक कदम')
         ) {
           const cleanHeading = sanitizeDisplayLine(rawTrimmed);
-          const isRedFlagHeader = cleanHeading.toUpperCase().includes('RED FLAG');
+          const isRedFlagHeader = cleanHeading.toUpperCase().includes('RED FLAG') || cleanHeading.includes('ঝুঁকি') || cleanHeading.includes('जोखिम');
           
           return (
             <div 
@@ -114,16 +122,22 @@ function FormattedLegalAudit({ reportText }) {
           rawTrimmed.includes('HIGH RISK') || 
           rawTrimmed.includes('MEDIUM RISK') || 
           rawTrimmed.includes('LOW RISK') || 
+          rawTrimmed.includes('উচ্চ ঝুঁকি') || 
+          rawTrimmed.includes('মাঝারি ঝুঁকি') || 
+          rawTrimmed.includes('নিম্ন ঝুঁকি') || 
+          rawTrimmed.includes('उच्च जोखिम') || 
+          rawTrimmed.includes('मध्यम जोखिम') || 
+          rawTrimmed.includes('कम जोखिम') || 
           rawTrimmed.startsWith('- 🔴') || 
           rawTrimmed.startsWith('- 🟡') || 
           rawTrimmed.startsWith('- 🟢')
         ) {
-          const isHigh = rawTrimmed.includes('HIGH') || rawTrimmed.includes('🔴');
-          const isMed = rawTrimmed.includes('MEDIUM') || rawTrimmed.includes('🟡');
+          const isHigh = rawTrimmed.includes('HIGH') || rawTrimmed.includes('🔴') || rawTrimmed.includes('উচ্চ') || rawTrimmed.includes('उच्च');
+          const isMed = rawTrimmed.includes('MEDIUM') || rawTrimmed.includes('🟡') || rawTrimmed.includes('মাঝারি') || rawTrimmed.includes('मध्यम');
           const cleanedText = sanitizeDisplayLine(
             rawTrimmed
               .replace(/^[-*•]\s*/, '')
-              .replace(/(🔴\s*HIGH\s*RISK|🟡\s*MEDIUM\s*RISK|🟢\s*LOW\s*RISK)\s*:?/i, '')
+              .replace(/(🔴\s*(HIGH\s*RISK|উচ্চ ঝুঁকি|उच्च जोखिम)|🟡\s*(MEDIUM\s*RISK|মাঝারি ঝুঁকি|मध्यम जोखिम)|🟢\s*(LOW\s*RISK|নিম্ন ঝুঁকি|कम जोखिम))\s*:?/i, '')
           );
           
           return (
@@ -141,7 +155,7 @@ function FormattedLegalAudit({ reportText }) {
                 <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide text-white shadow-xs ${
                   isHigh ? 'bg-rose-500' : isMed ? 'bg-amber-500' : 'bg-emerald-600'
                 }`}>
-                  {isHigh ? 'High Risk' : isMed ? 'Moderate Risk' : 'Low Risk'}
+                  {isHigh ? 'High Risk / উচ্চ ঝুঁকি / उच्च जोखिम' : isMed ? 'Moderate Risk / মাঝারি ঝুঁকি' : 'Low Risk / নিরাপদ'}
                 </span>
                 <span className="text-slate-800 font-semibold">{cleanedText}</span>
               </div>
@@ -150,8 +164,8 @@ function FormattedLegalAudit({ reportText }) {
         }
 
         // 3. Actionable Next Steps Checkboxes (Soft Pastel Tint)
-        if (rawTrimmed.match(/^\d+\.\s+/) || (rawTrimmed.startsWith('- ') && rawTrimmed.toLowerCase().includes('negotiate'))) {
-          const cleanStep = sanitizeDisplayLine(rawTrimmed.replace(/^\d+\.\s+/, '').replace(/^[-*•]\s*/, ''));
+        if (rawTrimmed.match(/^[\d১-৯१-९]+\.\s+/) || (rawTrimmed.startsWith('- ') && rawTrimmed.toLowerCase().includes('negotiate'))) {
+          const cleanStep = sanitizeDisplayLine(rawTrimmed.replace(/^[\d১-৯१-९]+\.\s+/, '').replace(/^[-*•]\s*/, ''));
           return (
             <div key={idx} className="flex items-start gap-2 p-2.5 bg-sky-50/70 rounded-xl border border-sky-100 text-xs text-slate-700 my-1.5 shadow-xs">
               <CheckSquare className="w-3.5 h-3.5 text-blue-600 flex-shrink-0 mt-0.5" />
@@ -164,8 +178,8 @@ function FormattedLegalAudit({ reportText }) {
         const cleanContent = sanitizeDisplayLine(rawTrimmed.replace(/^[-*•]\s*/, '• '));
         if (!cleanContent) return null;
 
-        // Check for Attorney Counter-Draft / Redline box
-        const matchCounter = cleanContent.match(/^(•\s*)?(Attorney Counter-Draft|Attorney Redline|Proposed Counter-Clause):\s*(.*)/i);
+        // Check for Attorney Counter-Draft / Redline box (Multilingual support)
+        const matchCounter = cleanContent.match(/^(•\s*)?(Attorney Counter-Draft|Attorney Redline|Proposed Counter-Clause|আইনজীবীর বিকল্প খসড়া|প্রস্তাবিত বিকল্প শর্ত|वकील का प्रति-प्रारूप|प्रस्तावित प्रति-शर्त).*?[:：]\s*(.*)/i);
         if (matchCounter) {
           const [, , label, counterText] = matchCounter;
           return (
@@ -192,8 +206,8 @@ function FormattedLegalAudit({ reportText }) {
           );
         }
 
-        // Check if line has a label prefix (e.g. Issue:, Signer Impact:, Finding:)
-        const matchLabel = cleanContent.match(/^(•\s*)?(Issue|Signer Impact|Document Type|Overall Health Score|Executive Verdict|Finding|Non-Compete|IP Assignment|Termination|Indemnification|Applicable Statutory Framework):\s*(.*)/i);
+        // Check if line has a label prefix (Multilingual support for English, Bengali, Hindi)
+        const matchLabel = cleanContent.match(/^(•\s*)?(Issue|Signer Impact|Document Type|Overall Health Score|Executive Verdict|Finding|Non-Compete|IP Assignment|Termination|Indemnification|Applicable Statutory Framework|সমস্যা|স্বাক্ষরকারীর প্রভাব|নথির ধরন|সার্বিক সুরক্ষা স্কোর|নির্বাহী সিদ্ধান্ত|প্রযোজ্য সংবিধিবদ্ধ আইন|প্রতিযোগিতা নিষেধাজ্ঞা|বৌদ্ধিক সম্পত্তি পরিসীমা|চুক্তি বাতিল নোটিশ|দায়বদ্ধতার সীমা|समस्या|हस्ताक्षरकर्ता पर प्रभाव|दस्तावेज़ का प्रकार|कुल सुरक्षा स्कोर|कार्यकारी निर्णय|लागू कानूनी ढांचा|गैर-प्रतिस्पर्धा खंड|बौद्धिक संपदा दायरा|समाप्ति एवं नोटिस अवधि|देनदारी व क्षतिपूर्ति सीमा)[:：]\s*(.*)/i);
 
         if (matchLabel) {
           const [, bullet, label, rest] = matchLabel;
