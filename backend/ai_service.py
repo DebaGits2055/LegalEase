@@ -38,16 +38,43 @@ load_dotenv(dotenv_path)
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 OLLAMA_GENERATE_URL = f"{OLLAMA_HOST}/api/generate"
 OLLAMA_CHAT_URL = f"{OLLAMA_HOST}/api/chat"
-LOCAL_MODEL_NAME = os.getenv("LOCAL_LLM_MODEL", "llama3")
+_CACHED_LOCAL_MODEL: Optional[str] = None
 
-def query_local_ollama(prompt: str, model_name: str = LOCAL_MODEL_NAME, timeout: int = 35) -> Optional[str]:
+def get_available_local_model() -> str:
+    global _CACHED_LOCAL_MODEL
+    if _CACHED_LOCAL_MODEL:
+        return _CACHED_LOCAL_MODEL
+        
+    env_model = os.getenv("LOCAL_LLM_MODEL")
+    if env_model:
+        _CACHED_LOCAL_MODEL = env_model
+        return env_model
+    try:
+        req = urllib.request.Request(f"{OLLAMA_HOST}/api/tags")
+        with urllib.request.urlopen(req, timeout=3) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            models = [m.get("name") for m in data.get("models", []) if m.get("name")]
+            if models:
+                for preferred in ["llama3:8b", "llama3", "phi3:mini", "phi3", "mistral:7b", "mistral"]:
+                    for m in models:
+                        if preferred in m:
+                            _CACHED_LOCAL_MODEL = m
+                            return m
+                _CACHED_LOCAL_MODEL = models[0]
+                return models[0]
+    except Exception:
+        pass
+    return "llama3:8b"
+
+def query_local_ollama(prompt: str, model_name: Optional[str] = None, timeout: int = 60) -> Optional[str]:
     """
     Connects to an on-device local Ollama model (e.g. LLaMA-3, Mistral, Phi-3, Qwen).
     Ensures 100% private offline computation. Zero data is transmitted to external cloud.
     """
+    target_model = model_name or get_available_local_model()
     try:
         payload = json.dumps({
-            "model": model_name,
+            "model": target_model,
             "prompt": prompt,
             "stream": False,
             "options": {
