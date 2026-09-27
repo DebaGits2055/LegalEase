@@ -68,7 +68,7 @@ def get_available_local_model() -> str:
         pass
     return "llama3:8b"
 
-def query_local_ollama(prompt: str, model_name: Optional[str] = None, timeout: int = 60) -> Optional[str]:
+def query_local_ollama(prompt: str, model_name: Optional[str] = None, timeout: int = 180) -> Optional[str]:
     """
     Connects to an on-device local Ollama model (e.g. LLaMA-3, Mistral, Phi-3, Qwen).
     Ensures 100% private offline computation. Zero data is transmitted to external cloud.
@@ -80,8 +80,9 @@ def query_local_ollama(prompt: str, model_name: Optional[str] = None, timeout: i
             "prompt": prompt,
             "stream": False,
             "options": {
-                "temperature": 0.2,
-                "top_p": 0.9
+                "temperature": 0.1,
+                "top_p": 0.9,
+                "num_predict": 750
             }
         }).encode("utf-8")
         
@@ -94,7 +95,7 @@ def query_local_ollama(prompt: str, model_name: Optional[str] = None, timeout: i
             data = json.loads(resp.read().decode("utf-8"))
             return data.get("response", "").strip()
     except Exception as e:
-        # Ollama daemon not running or not installed
+        print(f"[Ollama Exception]: {e}")
         return None
 
 def analyze_legal_document(
