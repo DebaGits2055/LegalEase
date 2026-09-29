@@ -96,3 +96,15 @@ npm run dev
 ├── .gitignore
 └── README.md
 ```
+
+---
+
+## 👥 Core Project Collaborators & Team
+
+| Contributor / Handle | Role | GitHub Profile |
+| :--- | :--- | :--- |
+| **Subhajit Sil** | Project Lead & Full-Stack Architect | [@subhjitsil10](https://github.com/subhjitsil10) |
+| **Debadrito** | Backend & Legal Intelligence Core | [@DebaGits2055](https://github.com/DebaGits2055) |
+| **Aritra Ghosh** | Platform Collaborator & Engineering | [@aritraghosh-0307](https://github.com/aritraghosh-0307) |
+| **Shivalik** | Platform Collaborator & Integration | [@shivalik20-source](https://github.com/shivalik20-source) |
+
