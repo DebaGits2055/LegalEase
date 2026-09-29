@@ -142,12 +142,14 @@ export const api = {
       } catch (e) {}
     }
 
-    // Check LocalStore
-    const localUser = localStore.getUser();
-    if (localUser && localUser.email === cleanEmail && localUser.full_name) {
-      setToken('legalease_token_session');
+    // Check LocalStore & Permanent Local User Registry
+    const registeredUser = localStore.getRegisteredUser(cleanEmail) || (localStore.getUser()?.email === cleanEmail ? localStore.getUser() : null);
+    if (registeredUser && registeredUser.full_name) {
+      const token = `token_${cleanEmail}_${Date.now()}`;
+      setToken(token);
+      localStore.setUser(registeredUser);
       pendingVerifications.delete(cleanEmail);
-      return { success: true, is_new_user: false, token: 'legalease_token_session', user: localUser };
+      return { success: true, is_new_user: false, token, user: registeredUser };
     }
 
     return {

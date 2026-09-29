@@ -237,8 +237,8 @@ export default function DocumentWorkspace({ user, language, setLanguage, onOpenA
   const [reportData, setReportData] = useState(null);
   const [errorMsg, setErrorMsg] = useState('');
   
-  // Dual-Engine and Ephemeral Privacy Mode states
-  const [engineMode, setEngineMode] = useState('local'); // 'local' (Private Local Model) or 'cloud' (Gemini Flash)
+  // Ephemeral Privacy Mode states
+  const [engineMode, setEngineMode] = useState('cloud'); // Gemini 3.8 Flash
   const [isEphemeral, setIsEphemeral] = useState(true); // Ephemeral Zero-Retention Mode
   
   // Drag and Drop state
@@ -499,10 +499,10 @@ export default function DocumentWorkspace({ user, language, setLanguage, onOpenA
 
           {/* Controls: Engine Selector + Ephemeral Mode + E2E Shield + Output Language */}
           <div className="flex items-center gap-2 flex-wrap">
-            {/* 100% Local AI Model Engine Badge */}
-            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-900 text-[11px] font-extrabold shadow-xs">
-              <Cpu className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
-              <span>100% Local Private Legal AI (Zero Cloud)</span>
+            {/* Gemini 3.8 Flash Neural Engine Badge */}
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-xl text-blue-900 text-[11px] font-extrabold shadow-xs">
+              <Sparkles className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
+              <span>Gemini 3.8 Flash Neural Engine</span>
             </div>
 
             {/* Ephemeral Privacy Toggle */}
