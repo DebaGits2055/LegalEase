@@ -182,7 +182,9 @@ export const prepareContentPayload = async (file, prompt) => {
 const CANDIDATE_MODELS = [
   'gemini-3.8-flash',
   'gemini-3.7-flash',
-  'gemini-3.6-flash'
+  'gemini-3.6-flash',
+  'gemini-3.5-flash-lite',
+  'gemini-flash-lite-latest'
 ];
 
 let activeKeyIndex = 0;
@@ -209,7 +211,6 @@ export const generateWithResilience = async (contents) => {
 
     const apiKey = pool[selectedIdx];
     const client = new GoogleGenAI({ apiKey });
-    let keyQuotaExceeded = false;
 
     for (const model of CANDIDATE_MODELS) {
       try {
@@ -245,10 +246,8 @@ export const generateWithResilience = async (contents) => {
           msg.includes('overloaded');
 
         if (isQuotaOrLimit) {
-          console.warn(`[Gemini Pool] Key #${selectedIdx + 1} quota/limit reached (${err.message.slice(0, 70)}). Activating 10-min cooldown and auto-switching to next key...`);
-          keyCooldowns.set(selectedIdx, Date.now() + 10 * 60 * 1000);
-          keyQuotaExceeded = true;
-          break; // Break model loop, switch to next key immediately
+          console.warn(`[Gemini Pool] Model ${model} on Key #${selectedIdx + 1} quota/rate limit reached. Cascading to next model...`);
+          continue; // Do NOT abandon the key immediately; try next candidate model!
         } else if (isTemporaryBusy) {
           console.warn(`[Gemini Pool] Model ${model} on Key #${selectedIdx + 1} busy (503). Trying next candidate model...`);
           continue;
@@ -259,9 +258,8 @@ export const generateWithResilience = async (contents) => {
       }
     }
 
-    if (keyQuotaExceeded) {
-      continue;
-    }
+    // All candidate models failed on this key, set temporary cooldown and try next key
+    keyCooldowns.set(selectedIdx, Date.now() + 5 * 60 * 1000);
   }
 
   let finalMsg = lastErr?.message || 'All Gemini API keys in the failover pool are temporarily unavailable.';
@@ -353,7 +351,7 @@ export const auditDocumentWithGemini = async (file, language = 'English', isProM
         success: true,
         is_legal: false,
         report: getLocalizedRejectionMessage(language),
-        engine: engineUsed || 'Gemini 3.8 Flash'
+        engine: engineUsed || 'Gemini Flash'
       };
     }
 
@@ -361,7 +359,7 @@ export const auditDocumentWithGemini = async (file, language = 'English', isProM
       success: true,
       is_legal: true,
       report: respText,
-      engine: engineUsed || 'Gemini 3.8 Flash'
+      engine: engineUsed || 'Gemini Flash'
     };
   } catch (err) {
     console.error('Gemini Audit Error:', err);
