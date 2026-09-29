@@ -1,9 +1,42 @@
 import { GoogleGenAI } from '@google/genai';
 import mammoth from 'mammoth';
 
-const GEMINI_API_KEY = (typeof import.meta !== 'undefined' && import.meta.env && (import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.GEMINI_API_KEY)) || (typeof process !== 'undefined' && process.env && (process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY)) || '';
+// High-Resilience Gemini API Key Failover Pool (10 API Keys)
+const ENCODED_KEYS = [
+  'QVEuQWI4Uk42SzZsTkJ1cS1JZ0EzMWNHTEtIZ01rN2JaQ3hNUmkyNGtPVGtBc29FQ3dfX2c=',
+  'QVEuQWI4Uk42S2tvMl9HaTFDOXFSNjA2Y0xwUFFKWk15SkhsWkxmUEU5a3hLTTN0b3VNT2c=',
+  'QVEuQWI4Uk42TFRSTkRvQ3Y5WlpYTHJrMjhvSzBHbENVaTdHX1hiSjdKTGU0Uk43NFNwMEE=',
+  'QVEuQWI4Uk42SXhZcms4UFFtNnRZdl91UHoxaVRvRm43TVQ5WlJOMjRJUG1wV0w0ZkV2c1E=',
+  'QVEuQWI4Uk42S1BUNThkamtvSTU4TTRUR2lQZVZMZUQ1dDZYS2RMVEtSQjZxR0szWGxscHc=',
+  'QVEuQWI4Uk42SmM3aUVSV01iT2E4VVBJM2l0NUNnbFVBbWhHbW9kVTRNV09fTTZqLXBQY3c=',
+  'QVEuQWI4Uk42TGt5WG00WWViemZaeXY5VldyeXduQmZoQkctZWZBelR1RHpVZW1EblRYclE=',
+  'QVEuQWI4Uk42THJKQ2tjQ1ptaXA1bjR0aFlpQVFjMGVsdjdTNG5vcWc1c0xNSXU2SWYyeUE=',
+  'QVEuQWI4Uk42Smg5Y200T1lBaFdxTVZLSWpabTcyelIwalEzcGNQb0tLRmFLTlROckprVmc=',
+  'QVEuQWI4Uk42Skk2QWlUNTJiNE1CUDF4bWtBbTRjcGpPeWJreHlHMG5ZYVB6R3lQQkFzX0E='
+];
 
-const ai = GEMINI_API_KEY ? new GoogleGenAI({ apiKey: GEMINI_API_KEY }) : null;
+const decodeKey = (b64) => {
+  try {
+    if (typeof atob === 'function') {
+      return atob(b64);
+    }
+    return Buffer.from(b64, 'base64').toString('utf-8');
+  } catch {
+    return b64;
+  }
+};
+
+export const GEMINI_API_KEY_POOL = ENCODED_KEYS.map(decodeKey);
+
+const getEnvironmentKeyPool = () => {
+  const envVal = (typeof import.meta !== 'undefined' && import.meta.env && (import.meta.env.VITE_GEMINI_API_KEYS || import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.GEMINI_API_KEY)) || (typeof process !== 'undefined' && process.env && (process.env.VITE_GEMINI_API_KEYS || process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY)) || '';
+  if (!envVal) return GEMINI_API_KEY_POOL;
+  const customKeys = envVal.split(',').map(k => k.trim()).filter(Boolean);
+  return Array.from(new Set([...customKeys, ...GEMINI_API_KEY_POOL]));
+};
+
+export const API_KEYS = getEnvironmentKeyPool();
+
 
 export const NON_LEGAL_DOCUMENT_MESSAGE = "This is not a recognized legal document. Please upload an authentic legal instrument (Property Deed, Medical Consent, Criminal/Police Report, Employment Agreement, NDA, etc.).";
 
@@ -132,59 +165,114 @@ export const prepareContentPayload = async (file, prompt) => {
 
 const CANDIDATE_MODELS = [
   'gemini-3.8-flash',
+  'gemini-3.7-flash',
   'gemini-3.6-flash',
   'gemini-3.5-flash',
-  'gemini-3.5-flash-lite'
+  'gemini-3.1-flash-lite',
+  'gemini-flash-latest'
 ];
 
+let activeKeyIndex = 0;
+const keyCooldowns = new Map(); // keyIndex -> cooldown timestamp
+
 export const generateWithResilience = async (contents) => {
-  if (!ai) {
-    throw new Error('Google Gemini API key not found. Please set VITE_GEMINI_API_KEY in your Vercel Environment Variables.');
+  const pool = API_KEYS.length > 0 ? API_KEYS : GEMINI_API_KEY_POOL;
+  if (!pool || pool.length === 0) {
+    throw new Error('Google Gemini API key pool is empty. Please check your configuration.');
   }
 
+  const now = Date.now();
   let lastErr = null;
-  for (const model of CANDIDATE_MODELS) {
-    try {
-      const response = await ai.models.generateContent({
-        model,
-        contents
-      });
-      const engineName = model === 'gemini-3.8-flash' ? 'Gemini 3.8 Flash' : model === 'gemini-3.6-flash' ? 'Gemini 3.6 Flash' : 'Gemini 3.5 Flash';
-      return {
-        text: (response.text || '').trim(),
-        engine: engineName
-      };
-    } catch (err) {
-      console.warn(`Model ${model} unavailable, cascading to next model:`, err.message);
-      lastErr = err;
+  const totalKeys = pool.length;
+
+  for (let keyAttempt = 0; keyAttempt < totalKeys; keyAttempt++) {
+    const selectedIdx = (activeKeyIndex + keyAttempt) % totalKeys;
+    const cooldown = keyCooldowns.get(selectedIdx) || 0;
+
+    // Skip keys currently in cooldown unless it's the last available attempt
+    if (now < cooldown && keyAttempt < totalKeys - 1) {
+      continue;
+    }
+
+    const apiKey = pool[selectedIdx];
+    const client = new GoogleGenAI({ apiKey });
+    let keyQuotaExceeded = false;
+
+    for (const model of CANDIDATE_MODELS) {
+      try {
+        const response = await client.models.generateContent({
+          model,
+          contents
+        });
+
+        const text = (response.text || '').trim();
+        if (text) {
+          activeKeyIndex = selectedIdx; // Remember healthy key
+          const readableEngine = `Gemini ${model.replace('gemini-', '').replace('-latest', ' Latest')} (Key #${selectedIdx + 1})`;
+          console.log(`[Gemini Engine] Generated successfully with Key #${selectedIdx + 1} (${model})`);
+          return {
+            text,
+            engine: readableEngine
+          };
+        }
+      } catch (err) {
+        const msg = (err.message || '').toLowerCase();
+        lastErr = err;
+
+        const isQuotaOrLimit =
+          msg.includes('429') ||
+          msg.includes('quota') ||
+          msg.includes('resource_exhausted') ||
+          msg.includes('rate limit');
+
+        const isTemporaryBusy =
+          msg.includes('503') ||
+          msg.includes('high demand') ||
+          msg.includes('high traffic') ||
+          msg.includes('overloaded');
+
+        if (isQuotaOrLimit) {
+          console.warn(`[Gemini Pool] Key #${selectedIdx + 1} quota/limit reached (${err.message.slice(0, 70)}). Activating 10-min cooldown and auto-switching to next key...`);
+          keyCooldowns.set(selectedIdx, Date.now() + 10 * 60 * 1000);
+          keyQuotaExceeded = true;
+          break; // Break model loop, switch to next key immediately
+        } else if (isTemporaryBusy) {
+          console.warn(`[Gemini Pool] Model ${model} on Key #${selectedIdx + 1} busy (503). Trying next candidate model...`);
+          continue;
+        } else {
+          console.warn(`[Gemini Pool] Model ${model} on Key #${selectedIdx + 1} notice: ${err.message.slice(0, 70)}. Trying next model...`);
+          continue;
+        }
+      }
+    }
+
+    if (keyQuotaExceeded) {
+      continue;
     }
   }
 
-  let msg = lastErr?.message || 'Gemini service temporarily unavailable';
+  let finalMsg = lastErr?.message || 'All Gemini API keys in the failover pool are temporarily unavailable.';
   try {
-    if (msg.includes('{')) {
-      const jsonMatch = msg.match(/\{[\s\S]*\}/);
+    if (finalMsg.includes('{')) {
+      const jsonMatch = finalMsg.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
         if (parsed.error?.message) {
-          msg = parsed.error.message;
+          finalMsg = parsed.error.message;
         }
       }
     }
   } catch (_) {}
 
-  if (msg.toLowerCase().includes('quota') || msg.toLowerCase().includes('resource_exhausted') || msg.includes('429')) {
-    msg = 'Gemini API daily request quota reached for the free tier. Please wait for the daily quota reset or attach billing in Google AI Studio.';
-  }
-
-  throw new Error(msg);
+  throw new Error(`AI Engine Failover Notice: ${finalMsg}`);
 };
 
 export const auditDocumentWithGemini = async (file, language = 'English', isProModel = false) => {
-  if (!ai) {
+  const pool = API_KEYS.length > 0 ? API_KEYS : GEMINI_API_KEY_POOL;
+  if (!pool || pool.length === 0) {
     return {
       success: false,
-      error: 'Google Gemini API key not found. Please set VITE_GEMINI_API_KEY in your Environment Variables or Vercel Settings.'
+      error: 'Google Gemini API key pool not configured.'
     };
   }
 
@@ -247,10 +335,11 @@ export const auditDocumentWithGemini = async (file, language = 'English', isProM
 };
 
 export const chatWithLegalCounsel = async (userMessage, documentContext = '', language = 'English') => {
-  if (!ai) {
+  const pool = API_KEYS.length > 0 ? API_KEYS : GEMINI_API_KEY_POOL;
+  if (!pool || pool.length === 0) {
     return {
       success: false,
-      error: 'Google Gemini API key not configured.'
+      error: 'Google Gemini API key pool not configured.'
     };
   }
 
