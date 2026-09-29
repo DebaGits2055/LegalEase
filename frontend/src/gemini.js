@@ -1,18 +1,19 @@
 import { GoogleGenAI } from '@google/genai';
 import mammoth from 'mammoth';
 
-// High-Resilience Gemini API Key Failover Pool (10 API Keys)
+// High-Resilience Gemini API Key Failover Pool (11 Distinct Google Project Keys)
 const ENCODED_KEYS = [
-  'QVEuQWI4Uk42SzZsTkJ1cS1JZ0EzMWNHTEtIZ01rN2JaQ3hNUmkyNGtPVGtBc29FQ3dfX2c=',
-  'QVEuQWI4Uk42S2tvMl9HaTFDOXFSNjA2Y0xwUFFKWk15SkhsWkxmUEU5a3hLTTN0b3VNT2c=',
-  'QVEuQWI4Uk42TFRSTkRvQ3Y5WlpYTHJrMjhvSzBHbENVaTdHX1hiSjdKTGU0Uk43NFNwMEE=',
-  'QVEuQWI4Uk42SXhZcms4UFFtNnRZdl91UHoxaVRvRm43TVQ5WlJOMjRJUG1wV0w0ZkV2c1E=',
-  'QVEuQWI4Uk42S1BUNThkamtvSTU4TTRUR2lQZVZMZUQ1dDZYS2RMVEtSQjZxR0szWGxscHc=',
-  'QVEuQWI4Uk42SmM3aUVSV01iT2E4VVBJM2l0NUNnbFVBbWhHbW9kVTRNV09fTTZqLXBQY3c=',
-  'QVEuQWI4Uk42TGt5WG00WWViemZaeXY5VldyeXduQmZoQkctZWZBelR1RHpVZW1EblRYclE=',
-  'QVEuQWI4Uk42THJKQ2tjQ1ptaXA1bjR0aFlpQVFjMGVsdjdTNG5vcWc1c0xNSXU2SWYyeUE=',
-  'QVEuQWI4Uk42Smg5Y200T1lBaFdxTVZLSWpabTcyelIwalEzcGNQb0tLRmFLTlROckprVmc=',
-  'QVEuQWI4Uk42Skk2QWlUNTJiNE1CUDF4bWtBbTRjcGpPeWJreHlHMG5ZYVB6R3lQQkFzX0E='
+  'QVEuQWI4Uk42SlktN1o4eFVkLVNRWVo4UXV3bXJZWXFXYkI3ZXJaM2RNdEpnaDg4T1NZYnc=', // Key 1
+  'QVEuQWI4Uk42S2hwbl9IWUlqR1lfTmdlcWNmYzN1SXRCZnFlZzIxcFhFWjh0YU41dUMxZVE=', // Key 2
+  'QVEuQWI4Uk42SXpETzJCMzVaYktaOTlXbVc2WGpSQTg2ZENVN1VRNkxzenFxOXJDX2VtaHc=', // Key 3
+  'QVEuQWI4Uk42Sk91eGxsTDZ6T1hRTEk3a2dTVjkzem14a3JFdHhEY3V0SnZQWkdQVXJya1E=', // Key 4
+  'QVEuQWI4Uk42S1pOWVB3RjYtSFJ3aGxHb1VkNDFqQ2JWdkNEc2o3S204Wjg5ZEI5TXNZdnc=', // Key 5
+  'QVEuQWI4Uk42TDE3dHkxamEwSTVNb0NkOS14WGpvT0tFcmZTODd6QmE3YmxFMEtuY3Q1ZVE=', // Key 6
+  'QVEuQWI4Uk42SV96MXFvaV9iazhpVEpIbmxjMjIxalU3aVpKeHJvZTdFeWRmeE9iSXU3emc=', // Key 7
+  'QVEuQWI4Uk42SS1ZQ05HaHItV1dTcmZvR2ZtRXZ6cHN0OEVub0RqazctX2xYWW9hYXlKanc=', // Key 8
+  'QVEuQWI4Uk42SmdCTXZwTG1VSHBGd3ZGb3RHZkw5Vy1NdWJKVXkyQmVtRFRrd0t3VEtOT0E=', // Key 9
+  'QVEuQWI4Uk42SV9xZ0hiQTB4b0hreWJ1SEtSa2tuQzVWX2JJQkdJUXpRbEoxODVHZ2IwdFE=', // Key 10
+  'QVEuQWI4Uk42TGxNQXBIcTFwblNUd1RsX1pkNkNzWFpsMHM0Sy12a1FhZXVMdWwyc3lvUVE='  // Key 11
 ];
 
 const decodeKey = (b64) => {
@@ -182,9 +183,7 @@ export const prepareContentPayload = async (file, prompt) => {
 const CANDIDATE_MODELS = [
   'gemini-3.8-flash',
   'gemini-3.7-flash',
-  'gemini-3.6-flash',
-  'gemini-3.5-flash-lite',
-  'gemini-flash-lite-latest'
+  'gemini-3.6-flash'
 ];
 
 let activeKeyIndex = 0;
