@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { X, Mail, ShieldCheck, RefreshCw, Volume2, ArrowLeft, User, Phone, Briefcase, Building, LogIn, UserPlus } from 'lucide-react';
 import { api, setToken } from '../../api';
 
-export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
-  const [mode, setMode] = useState('signup'); // 'signup' or 'login'
+export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode = 'login' }) {
+  const [mode, setMode] = useState(initialMode || 'login'); // 'login' or 'signup'
   const [step, setStep] = useState('request_otp'); // 'request_otp', 'verify_otp'
   const [email, setEmail] = useState('');
   const [captchaCode, setCaptchaCode] = useState('');
@@ -101,6 +101,17 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
   };
 
   useEffect(() => {
+    if (isOpen) {
+      setMode(initialMode || 'login');
+      setError('');
+      setOtpCode('');
+      if (step === 'request_otp') {
+        setTimeout(() => generateNewCaptcha(), 50);
+      }
+    }
+  }, [isOpen, initialMode]);
+
+  useEffect(() => {
     if (isOpen && step === 'request_otp') {
       setTimeout(() => generateNewCaptcha(), 50);
       setError('');
@@ -169,7 +180,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
         // Register new user — api.register verifies OTP on server first, then creates account
         const regRes = await api.register({
           email,
-          full_name: fullName.trim(),
+          full_name: fullName.trim() || email.split('@')[0],
           phone_number: phoneNumber.trim(),
           age: parseInt(age) || 24,
           profession,
@@ -179,15 +190,8 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
         onAuthSuccess(regRes.user);
         onClose();
       } else {
-        // Login — verify OTP on server and get JWT token
+        // Login — verify OTP on server and immediately log in
         const loginRes = await api.verifyOtp(email, otpCode);
-        if (loginRes.is_new_user) {
-          // User doesn't have a profile yet — switch to signup mode
-          setMode('signup');
-          setStep('request_otp');
-          setError('No account found for this email. Please create an account first.');
-          return;
-        }
         setToken(loginRes.token);
         onAuthSuccess(loginRes.user);
         onClose();

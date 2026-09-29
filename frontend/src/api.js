@@ -109,10 +109,10 @@ export const api = {
 
     pending.verified = true;
 
-    // Check existing user in MongoDB
+    // 1. Check existing user in MongoDB
     try {
       const mongoRes = await mongoDb.getUser(cleanEmail);
-      if (mongoRes?.success && mongoRes?.user && mongoRes.user.full_name) {
+      if (mongoRes?.success && mongoRes?.user && (mongoRes.user.full_name || mongoRes.user.email)) {
         const token = `token_${cleanEmail}_${Date.now()}`;
         setToken(token);
         localStore.setUser(mongoRes.user);
@@ -123,7 +123,7 @@ export const api = {
       console.log('MongoDB user fetch notice:', err);
     }
 
-    // Check Supabase if configured
+    // 2. Check Supabase if configured
     if (isSupabaseConfigured && supabase) {
       try {
         const { data: profile } = await supabase
@@ -132,7 +132,7 @@ export const api = {
           .eq('email', cleanEmail)
           .single();
 
-        if (profile && profile.full_name) {
+        if (profile && (profile.full_name || profile.email)) {
           const token = `sb_token_${profile.id || Date.now()}`;
           setToken(token);
           localStore.setUser(profile);
@@ -142,9 +142,9 @@ export const api = {
       } catch (e) {}
     }
 
-    // Check LocalStore & Permanent Local User Registry
+    // 3. Check LocalStore & Permanent Local User Registry
     const registeredUser = localStore.getRegisteredUser(cleanEmail) || (localStore.getUser()?.email === cleanEmail ? localStore.getUser() : null);
-    if (registeredUser && registeredUser.full_name) {
+    if (registeredUser && (registeredUser.full_name || registeredUser.email)) {
       const token = `token_${cleanEmail}_${Date.now()}`;
       setToken(token);
       localStore.setUser(registeredUser);
@@ -152,10 +152,44 @@ export const api = {
       return { success: true, is_new_user: false, token, user: registeredUser };
     }
 
+    // 4. Returning / Verified Email User Auto-Provisioning:
+    // If the user entered the correct 4-digit OTP from their Gmail, they have verified email ownership.
+    // Automatically provision their account in MongoDB so they log in DIRECTLY without ever hitting a brick wall.
+    const nameFromEmail = cleanEmail.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    const autoUser = {
+      email: cleanEmail,
+      full_name: nameFromEmail || 'Legal Member',
+      phone_number: '',
+      age: 24,
+      profession: 'Legal Professional',
+      org_name: '',
+      avatar_url: '',
+      is_subscribed: false,
+      subscription_plan: 'Free Tier',
+      doc_upload_count: 0,
+      audit_limit: 3,
+      created_at: new Date().toISOString()
+    };
+
+    try {
+      const saveRes = await mongoDb.saveUser(autoUser);
+      if (saveRes?.success && saveRes?.user) {
+        Object.assign(autoUser, saveRes.user);
+      }
+    } catch (e) {
+      console.warn('Auto provision mongo save note:', e);
+    }
+
+    const token = `token_${cleanEmail}_${Date.now()}`;
+    setToken(token);
+    localStore.setUser(autoUser);
+    pendingVerifications.delete(cleanEmail);
+
     return {
       success: true,
-      is_new_user: true,
-      email: cleanEmail
+      is_new_user: false,
+      token,
+      user: autoUser
     };
   },
 

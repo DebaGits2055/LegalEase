@@ -1,40 +1,45 @@
 import { MongoClient } from 'mongodb';
 
-const MONGODB_URI = process.env.MONGODB_URI || process.env.VITE_MONGODB_URI || '';
-const DB_NAME = process.env.MONGODB_DB_NAME || 'legalease_db';
-
 let cachedClient = null;
 let cachedDb = null;
 
-async function connectToDatabase() {
-  if (cachedClient && cachedDb) {
-    return { client: cachedClient, db: cachedDb };
-  }
+function getMongoUri() {
+  const uri = process.env.MONGODB_URI || process.env.VITE_MONGODB_URI || '';
+  return uri.trim().replace(/^["']|["']$/g, '');
+}
 
-  if (!MONGODB_URI) {
+function getDbName() {
+  return (process.env.MONGODB_DB_NAME || 'legalease').trim().replace(/^["']|["']$/g, '');
+}
+
+async function connectToDatabase() {
+  const uri = getMongoUri();
+  if (!uri) {
     return { client: null, db: null };
   }
 
-  const client = new MongoClient(MONGODB_URI, {
+  if (cachedClient && cachedDb) {
+    try {
+      await cachedDb.command({ ping: 1 });
+      return { client: cachedClient, db: cachedDb };
+    } catch {
+      cachedClient = null;
+      cachedDb = null;
+    }
+  }
+
+  const client = new MongoClient(uri, {
     maxPoolSize: 10,
     serverSelectionTimeoutMS: 5000,
     socketTimeoutMS: 45000
   });
 
   await client.connect();
-  const db = client.db(DB_NAME);
+  const dbName = getDbName();
+  const db = client.db(dbName);
 
   cachedClient = client;
   cachedDb = db;
-
-  // Create indexes for performance
-  try {
-    await db.collection('users').createIndex({ email: 1 }, { unique: true });
-    await db.collection('document_audits').createIndex({ user_email: 1, created_at: -1 });
-    await db.collection('revenue_ledger').createIndex({ transaction_id: 1 }, { unique: true });
-  } catch (e) {
-    console.log('Index setup notice:', e.message);
-  }
 
   return { client, db };
 }
@@ -55,10 +60,9 @@ export default async function handler(req, res) {
   const { action, payload } = req.body || {};
 
   try {
-    const { db } = await connectToDatabase();
+    const { client, db } = await connectToDatabase();
 
-    if (!db) {
-      // Return simulated success with notice if MONGODB_URI not yet added
+    if (!db || !client) {
       return res.status(200).json({
         success: true,
         connected: false,
@@ -67,15 +71,40 @@ export default async function handler(req, res) {
     }
 
     switch (action) {
-      // 1. Get User by Email
+      // 1. Get User by Email (Case-Insensitive & Dual-DB Fallback)
       case 'get_user': {
         const { email } = payload || {};
         if (!email) return res.status(400).json({ error: 'Email required' });
-        const user = await db.collection('users').findOne({ email: email.toLowerCase().trim() });
-        return res.status(200).json({ success: true, connected: true, user });
+        const cleanEmail = email.toLowerCase().trim();
+        const escaped = cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const query = { email: { $regex: new RegExp(`^${escaped}$`, 'i') } };
+
+        // Search primary database first
+        let user = await db.collection('users').findOne(query);
+
+        // Search alternate database ('legalease' vs 'legalease_db') if not found in primary
+        if (!user) {
+          const alternateDbName = db.databaseName === 'legalease' ? 'legalease_db' : 'legalease';
+          try {
+            user = await client.db(alternateDbName).collection('users').findOne(query);
+            // Auto-sync into primary db if found in alternate
+            if (user) {
+              const { _id, ...userData } = user;
+              await db.collection('users').updateOne(
+                { email: cleanEmail },
+                { $set: userData },
+                { upsert: true }
+              );
+            }
+          } catch (e) {
+            // Ignore alternate db lookup failure
+          }
+        }
+
+        return res.status(200).json({ success: true, connected: true, user: user || null });
       }
 
-      // 2. Save / Upsert User Profile
+      // 2. Save / Upsert User Profile (Dual-Sync to both legalease and legalease_db)
       case 'save_user': {
         const { user } = payload || {};
         if (!user || !user.email) return res.status(400).json({ error: 'User data required' });
@@ -93,7 +122,19 @@ export default async function handler(req, res) {
           { upsert: true, returnDocument: 'after' }
         );
 
-        return res.status(200).json({ success: true, connected: true, user: result.value || updateData });
+        const savedUser = result?.value || result || updateData;
+
+        // Also sync to alternate db to guarantee persistence across connection names
+        try {
+          const alternateDbName = db.databaseName === 'legalease' ? 'legalease_db' : 'legalease';
+          await client.db(alternateDbName).collection('users').updateOne(
+            { email: cleanEmail },
+            { $set: updateData, $setOnInsert: { created_at: new Date().toISOString() } },
+            { upsert: true }
+          );
+        } catch (e) {}
+
+        return res.status(200).json({ success: true, connected: true, user: savedUser });
       }
 
       // 3. Save Document Compliance Audit & 256-Bit Encrypted Vault Payload
