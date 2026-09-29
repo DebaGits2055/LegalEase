@@ -39,8 +39,8 @@ export const cleanTextForSpeech = (markdownText) => {
 
   // Limit to an executive audio briefing (~850 characters / key points)
   if (text.length > 900) {
-    const cutoff = text.lastIndexOf('.', 850);
-    text = (cutoff > 300 ? text.substring(0, cutoff + 1) : text.substring(0, 850)) + ' That concludes the key audio compliance summary.';
+    const cutoff = Math.max(text.lastIndexOf('.', 850), text.lastIndexOf('।', 850));
+    text = (cutoff > 300 ? text.substring(0, cutoff + 1) : text.substring(0, 850));
   }
 
   return text;
@@ -94,7 +94,7 @@ function FormattedLegalAudit({ reportText }) {
           rawTrimmed.includes('आवश्यक कदम')
         ) {
           const cleanHeading = sanitizeDisplayLine(rawTrimmed);
-          const isRedFlagHeader = cleanHeading.toUpperCase().includes('RED FLAG') || cleanHeading.includes('ঝুঁকি') || cleanHeading.includes('जोखिम');
+          const isRedFlagHeader = cleanHeading.toUpperCase().includes('RED FLAG') || cleanHeading.includes('ঝুঁকি') || cleanHeading.includes('जोखिम') || cleanHeading.includes('ప్రమాదం') || cleanHeading.includes('అపాయ') || cleanHeading.includes('धोका') || cleanHeading.includes('ஆபத்து') || cleanHeading.includes('જોખમ');
           
           return (
             <div 
@@ -379,15 +379,42 @@ export default function DocumentWorkspace({ user, language, setLanguage, onOpenA
     utterance.rate = 0.92;
     utterance.pitch = 1.0;
 
-    // Adjust language code
-    if (language?.includes('Tamil')) {
+    // Adjust language code for regional Indian speech synthesis
+    if (language?.includes('Telugu')) {
+      utterance.lang = 'te-IN';
+    } else if (language?.includes('Kannada')) {
+      utterance.lang = 'kn-IN';
+    } else if (language?.includes('Marathi')) {
+      utterance.lang = 'mr-IN';
+    } else if (language?.includes('Tamil')) {
       utterance.lang = 'ta-IN';
+    } else if (language?.includes('Gujarati')) {
+      utterance.lang = 'gu-IN';
+    } else if (language?.includes('Malayalam')) {
+      utterance.lang = 'ml-IN';
+    } else if (language?.includes('Punjabi')) {
+      utterance.lang = 'pa-IN';
+    } else if (language?.includes('Odia')) {
+      utterance.lang = 'or-IN';
     } else if (language?.includes('Hindi')) {
       utterance.lang = 'hi-IN';
-    } else if (language?.includes('Bangla')) {
+    } else if (language?.includes('Bangla') || language?.includes('Bengali')) {
       utterance.lang = 'bn-IN';
     } else {
       utterance.lang = 'en-US';
+    }
+
+    // Select matching client voice if available
+    if ('speechSynthesis' in window && window.speechSynthesis.getVoices) {
+      const voices = window.speechSynthesis.getVoices();
+      if (voices && voices.length > 0) {
+        const targetLang = utterance.lang.toLowerCase();
+        const prefix = targetLang.split('-')[0];
+        const match = voices.find(v => v.lang.toLowerCase() === targetLang || v.lang.toLowerCase().startsWith(prefix));
+        if (match) {
+          utterance.voice = match;
+        }
+      }
     }
 
     utterance.onstart = () => setIsSpeaking(true);
@@ -534,7 +561,14 @@ export default function DocumentWorkspace({ user, language, setLanguage, onOpenA
                 <option value="English">English</option>
                 <option value="Hindi (हिंदी)">Hindi (हिंदी)</option>
                 <option value="Bangla (বাংলা)">Bangla (বাংলা)</option>
+                <option value="Telugu (తెలుగు)">Telugu (తెలుగు)</option>
+                <option value="Kannada (ಕನ್ನಡ)">Kannada (ಕನ್ನಡ)</option>
+                <option value="Marathi (मराठी)">Marathi (मराठी)</option>
                 <option value="Tamil (தமிழ்)">Tamil (தமிழ்)</option>
+                <option value="Gujarati (ગુજરાતી)">Gujarati (ગુજરાતી)</option>
+                <option value="Malayalam (മലയാളം)">Malayalam (മലയാളം)</option>
+                <option value="Punjabi (ਪੰਜਾਬੀ)">Punjabi (ਪੰਜਾਬੀ)</option>
+                <option value="Odia (ଓଡ଼ିଆ)">Odia (ଓଡ଼ିଆ)</option>
               </select>
             </div>
           </div>

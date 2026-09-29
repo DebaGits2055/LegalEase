@@ -46,6 +46,22 @@ export const getLocalizedRejectionMessage = (language = 'English') => {
     return "⚠️ এটি কোনো স্বীকৃত আইনি নথি নয়। অনুগ্রহ করে একটি বৈধ আইনি নথি আপলোড করুন (যেমন: সম্পত্তির দলিল, চুক্তিপত্র, চিকিৎসা সম্মতি, পুলিশ এফআইআর, এনডিএ ইত্যাদি)।";
   } else if (langLower.includes('hindi') || langLower.includes('hi')) {
     return "⚠️ यह कोई मान्यता प्राप्त कानूनी दस्तावेज़ नहीं है। कृपया एक वैध कानूनी दस्तावेज़ अपलोड करें (जैसे: संपत्ति विलेख, अनुबंध पत्र, चिकित्सा सहमति, पुलिस प्राथमिकी/एफआईआर, एनडीए आदि)।";
+  } else if (langLower.includes('telugu') || langLower.includes('te')) {
+    return "⚠️ ఇది గుర్తించబడిన చట్టపరమైన పత్రం కాదు. దయచేసి ప్రామాణికమైన చట్టపరమైన పత్రాన్ని అప్‌లోడ్ చేయండి (ఉదా: ఆస్తి దస్తావేజు, ఒప్పంద పత్రం, వైద్య సమ్మతి, పోలీస్ ఎఫ్ఐఆర్, ఎన్‌డిఎ మొదలైనవి).";
+  } else if (langLower.includes('kannada') || langLower.includes('kn')) {
+    return "⚠️ ಇದು ಮಾನ್ಯತೆ ಪಡೆದ ಕಾನೂನು ದಾಖಲೆಯಲ್ಲ. ದಯವಿಟ್ಟು ಅಧಿಕೃತ ಕಾನೂನು ದಾಖಲೆಯನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ (ಉದಾ: ಆಸ್ತಿ ಪತ್ರ, ಒಪ್ಪಂದ, ವೈದ್ಯಕೀಯ ಸಮ್ಮತಿ, ಪೊಲೀಸ್ ಎಫ್‌ಐಆರ್, ಎನ್‌ಡಿಎ ಇತ್ಯಾದಿ).";
+  } else if (langLower.includes('marathi') || langLower.includes('mr')) {
+    return "⚠️ हे कोणतेही मान्यताप्राप्त कायदेशीर दस्तऐवज नाही. कृपया वैध कायदेशीर दस्तऐवज अपलोड करा (उदा. मालमत्ता दस्तऐवज, करारनामा, वैद्यकीय संमती, पोलीस तक्रार/एफआयआर, एनडीए इत्यादी).";
+  } else if (langLower.includes('tamil') || langLower.includes('ta')) {
+    return "⚠️ இது அங்கீகரிக்கப்பட்ட சட்ட ஆவணம் அல்ல. தயவுசெய்து உண்மையான சட்ட ஆவணத்தை பதிவேற்றவும் (எ.கா: சொத்து பத்திரம், ஒப்பந்தம், மருத்துவ ஒப்புதல், காவல் அறிக்கை/எஃப்ஐஆர், என்டிஏ போன்றவை).";
+  } else if (langLower.includes('gujarati') || langLower.includes('gu')) {
+    return "⚠️ આ કોઈ માન્ય કાનૂની દસ્તાવેજ નથી. કૃપા કરીને માન્ય કાનૂની દસ્તાવેજ અપલોડ કરો (જેમ કે: મિલકત દસ્તાવેજ, કરાર પત્ર, તબીબી સંમતિ, પોલીસ એફઆઈઆર, એનડીએ વગેરે).";
+  } else if (langLower.includes('malayalam') || langLower.includes('ml')) {
+    return "⚠️ ഇത് അംഗീകൃത നിയമപരമായ രേഖയല്ല. ദയവായി സാധുവായ നിയമപരമായ രേഖ അപ്‌ലോഡ് ചെയ്യുക (ഉദാ: വസ്തു ആധാരം, കരാർ, മെഡിക്കൽ സമ്മതം, പോലീസ് എഫ്ഐആർ, എൻഡിഎ മുതലായവ).";
+  } else if (langLower.includes('punjabi') || langLower.includes('pa')) {
+    return "⚠️ ਇਹ ਕੋਈ ਮਾਨਤਾ ਪ੍ਰਾਪਤ ਕਾਨੂੰਨੀ ਦਸਤਾਵੇਜ਼ ਨਹੀਂ ਹੈ। ਕਿਰਪਾ ਕਰਕੇ ਇੱਕ ਪ੍ਰਮਾਣਿਕ ਕਾਨੂੰਨੀ ਦਸਤਾਵੇਜ਼ ਅਪਲੋਡ ਕਰੋ (ਜਿਵੇਂ ਕਿ: ਜਾਇਦਾਦ ਦੀ ਰਜਿਸਟਰੀ, ਇਕਰਾਰਨਾਮਾ, ਮੈਡੀਕਲ ਸਹਿਮਤੀ, ਪੁਲਿਸ ਐਫਆਈਆਰ, ਐਨਡੀਏ ਆਦਿ)।";
+  } else if (langLower.includes('odia') || langLower.includes('or')) {
+    return "⚠️ ଏହା କୌଣସି ସ୍ୱୀକୃତିପ୍ରାପ୍ତ ଆଇନଗତ ଦଲିଲ ନୁହେଁ। ଦୟାକରି ଏକ ବୈଧ ଆଇନଗତ ଦଲିଲ ଅପଲୋଡ୍ କରନ୍ତୁ (ଯଥା: ସମ୍ପତ୍ତି ଦଲିଲ, ଚୁକ୍ତିନାମା, ଚିକିତ୍ସା ସମ୍ମତି, ପୋଲିସ୍ ଏଫ୍ଆଇଆର୍, ଏନ୍ଡିଏ ଇତ୍ୟାଦି)।";
   }
   return `⚠️ ${NON_LEGAL_DOCUMENT_MESSAGE}`;
 };
@@ -280,6 +296,22 @@ export const auditDocumentWithGemini = async (file, language = 'English', isProM
       langInstruction = `CRITICAL: You MUST write the ENTIRE analysis, all headings, clause titles, issues, signer impacts, and attorney counter-drafts exclusively in Bengali using authentic Bangla script (সম্পূর্ণ বিশ্লেষণটি খাঁটি বাংলা লিপিতে লিখুন). Do NOT output English words.`;
     } else if (langLower.includes('hindi') || langLower.includes('hi')) {
       langInstruction = `CRITICAL: You MUST write the ENTIRE analysis, all headings, clause titles, issues, signer impacts, and attorney counter-drafts exclusively in Hindi using authentic Devanagari script (संपूर्ण विश्लेषण हिंदी देवनागरी लिपि में लिखें). Do NOT output English words.`;
+    } else if (langLower.includes('telugu') || langLower.includes('te')) {
+      langInstruction = `CRITICAL: You MUST write the ENTIRE analysis, all headings, clause titles, issues, signer impacts, and attorney counter-drafts exclusively in Telugu using authentic Telugu script (పూర్తి చట్టపరమైన సమీక్ష మరియు నిబంధనలను స్పష్టమైన తెలుగు లిపిలో మాత్రమే రాయండి). Do NOT output English words.`;
+    } else if (langLower.includes('kannada') || langLower.includes('kn')) {
+      langInstruction = `CRITICAL: You MUST write the ENTIRE analysis, all headings, clause titles, issues, signer impacts, and attorney counter-drafts exclusively in Kannada using authentic Kannada script (ಸಂಪೂರ್ಣ ಕಾನೂನು ವಿಶ್ಲೇಷಣೆ ಮತ್ತು ಕರಡುಗಳನ್ನು ಕನ್ನಡ ಲಿಪಿಯಲ್ಲಿ ಮಾತ್ರ ಬರೆಯಿರಿ). Do NOT output English words.`;
+    } else if (langLower.includes('marathi') || langLower.includes('mr')) {
+      langInstruction = `CRITICAL: You MUST write the ENTIRE analysis, all headings, clause titles, issues, signer impacts, and attorney counter-drafts exclusively in Marathi using authentic Marathi Devanagari script (संपूर्ण कायदेशीर विश्लेषण आणि पर्यायी अटी शुद्ध मराठी देवनागरी लिपीमध्ये लिहा). Do NOT output English words.`;
+    } else if (langLower.includes('tamil') || langLower.includes('ta')) {
+      langInstruction = `CRITICAL: You MUST write the ENTIRE analysis, all headings, clause titles, issues, signer impacts, and attorney counter-drafts exclusively in Tamil using authentic Tamil script (முழு சட்ட பகுப்பாய்வு மற்றும் மாற்று விதிகளை தூய தமிழ் எழுத்துக்களில் எழுதவும்). Do NOT output English words.`;
+    } else if (langLower.includes('gujarati') || langLower.includes('gu')) {
+      langInstruction = `CRITICAL: You MUST write the ENTIRE analysis, all headings, clause titles, issues, signer impacts, and attorney counter-drafts exclusively in Gujarati using authentic Gujarati script (સંપૂર્ણ કાનૂની વિશ્લેષણ અને વૈકલ્પિક શરતો શુદ્ધ ગુજરાતી લિપિમાં લખો). Do NOT output English words.`;
+    } else if (langLower.includes('malayalam') || langLower.includes('ml')) {
+      langInstruction = `CRITICAL: You MUST write the ENTIRE analysis, all headings, clause titles, issues, signer impacts, and attorney counter-drafts exclusively in Malayalam using authentic Malayalam script (മുഴുവൻ നിയമ വിശകലനവും ആധികാരിക മലയാള ലിപിയിൽ എഴുതുക). Do NOT output English words.`;
+    } else if (langLower.includes('punjabi') || langLower.includes('pa')) {
+      langInstruction = `CRITICAL: You MUST write the ENTIRE analysis, all headings, clause titles, issues, signer impacts, and attorney counter-drafts exclusively in Punjabi using authentic Gurmukhi script (ਸਾਰਾ ਕਾਨੂੰਨੀ ਵਿਸ਼ਲੇਸ਼ਣ ਗੁਰਮੁਖੀ ਲਿਪੀ ਵਿੱਚ ਲਿਖੋ). Do NOT output English words.`;
+    } else if (langLower.includes('odia') || langLower.includes('or')) {
+      langInstruction = `CRITICAL: You MUST write the ENTIRE analysis, all headings, clause titles, issues, signer impacts, and attorney counter-drafts exclusively in Odia using authentic Odia script (ସମ୍ପୂର୍ଣ୍ଣ ଆଇନଗତ ବିଶ୍ଳେଷଣ ଓଡ଼ିଆ ଲିପିରେ ଲେଖନ୍ତୁ). Do NOT output English words.`;
     }
 
     const contents = await prepareContentPayload(file, `
@@ -294,7 +326,7 @@ export const auditDocumentWithGemini = async (file, language = 'English', isProM
     const { text: respText, engine: engineUsed } = await generateWithResilience(contents);
     const respLower = respText.toLowerCase();
 
-    // Strict validation check for non-legal documents
+    // Strict validation check for non-legal documents across all supported languages
     const rejectionKeywords = [
       'not a legal document',
       'not a legal contract',
@@ -302,7 +334,16 @@ export const auditDocumentWithGemini = async (file, language = 'English', isProM
       'please upload the correct one',
       'please upload the correect one',
       'স্বীকৃত আইনি নথি নয়',
-      'मान्यता प्राप्त कानूनी दस्तावेज़ नहीं'
+      'मान्यता प्राप्त कानूनी दस्तावेज़ नहीं',
+      'గుర్తించబడిన చట్టపరమైన పత్రం కాదు',
+      'చట్టపరమైన పత్రం కాదు',
+      'ಕಾನೂನು ದಾಖಲೆಯಲ್ಲ',
+      'कायदेशीर दस्तऐवज नाही',
+      'சட்ட ஆவணம் அல்ல',
+      'કાનૂની દસ્તાવેજ નથી',
+      'നിയമപരമായ രേഖയല്ല',
+      'ਕਾਨੂੰਨੀ ਦਸਤਾਵੇਜ਼ ਨਹੀਂ',
+      'ଆଇନଗତ ଦଲିଲ ନୁହେଁ'
     ];
 
     const isRejected = rejectionKeywords.some(kw => respLower.includes(kw)) || (respLower.trim() === NON_LEGAL_DOCUMENT_MESSAGE.toLowerCase());
@@ -341,6 +382,30 @@ export const chatWithLegalCounsel = async (userMessage, documentContext = '', la
   }
 
   try {
+    const langLower = (language || '').toLowerCase();
+    let chatLangInstruction = `Fluently reply in ${language}.`;
+    if (langLower.includes('telugu')) {
+      chatLangInstruction = `Fluently reply in authentic Telugu (స్పష్టమైన తెలుగు లిపిలో సమాధానం ఇవ్వండి).`;
+    } else if (langLower.includes('kannada')) {
+      chatLangInstruction = `Fluently reply in authentic Kannada (ಸ್ಪಷ್ಟ ಕನ್ನಡ ಲಿಪಿಯಲ್ಲಿ ಉತ್ತರಿಸಿ).`;
+    } else if (langLower.includes('marathi')) {
+      chatLangInstruction = `Fluently reply in authentic Marathi (शुद्ध मराठी देवनागरीत उत्तर द्या).`;
+    } else if (langLower.includes('tamil')) {
+      chatLangInstruction = `Fluently reply in authentic Tamil (தூய தமிழில் பதிலளிக்கவும்).`;
+    } else if (langLower.includes('gujarati')) {
+      chatLangInstruction = `Fluently reply in authentic Gujarati (શુદ્ધ ગુજરાતીમાં જવાબ આપો).`;
+    } else if (langLower.includes('malayalam')) {
+      chatLangInstruction = `Fluently reply in authentic Malayalam (മലയാളത്തിൽ മറുപടി നൽകുക).`;
+    } else if (langLower.includes('punjabi')) {
+      chatLangInstruction = `Fluently reply in authentic Punjabi (ਪੰਜਾਬੀ ਵਿੱਚ ਜਵਾਬ ਦਿਓ).`;
+    } else if (langLower.includes('odia')) {
+      chatLangInstruction = `Fluently reply in authentic Odia (ଓଡ଼ିଆରେ ଉତ୍ତର ଦିଅନ୍ତୁ).`;
+    } else if (langLower.includes('bangla') || langLower.includes('bengali')) {
+      chatLangInstruction = `Fluently reply in authentic Bengali (খাঁটি বাংলায় উত্তর দিন).`;
+    } else if (langLower.includes('hindi')) {
+      chatLangInstruction = `Fluently reply in authentic Hindi (शुद्ध हिंदी में उत्तर दें).`;
+    }
+
     const prompt = `
     You are LegalEase AI Counsel — an elite legal risk advisor.
     The user is asking questions about their uploaded agreement.
@@ -354,7 +419,7 @@ export const chatWithLegalCounsel = async (userMessage, documentContext = '', la
     CRITICAL INSTRUCTIONS:
     - Respond concisely with high legal accuracy and tactical advice.
     - Provide precise revision wording / redlines where applicable.
-    - Fluently reply in ${language}.
+    - ${chatLangInstruction}
     `;
 
     const { text: replyText } = await generateWithResilience([prompt]);
