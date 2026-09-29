@@ -61,8 +61,8 @@ export default function SubscriptionModal({ isOpen, onClose, onSubscriptionSucce
 
         <div className="flex items-center gap-2 mb-1">
           <h3 className="text-2xl font-extrabold text-slate-900">Top-Up Audit Credits</h3>
-          <span className="calm-pill text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200 font-bold flex items-center gap-1">
-            <Lock className="w-3 h-3 text-emerald-600" /> 256-Bit E2E Encrypted
+          <span className="calm-pill text-[10px] bg-slate-50 text-slate-700 border-slate-200 font-medium flex items-center gap-1">
+            <Lock className="w-3 h-3 text-slate-600" /> Confidential & Secure
           </span>
         </div>
         <p className="text-xs sm:text-sm text-slate-500 mb-6">
@@ -136,7 +136,7 @@ export default function SubscriptionModal({ isOpen, onClose, onSubscriptionSucce
                 <div className="text-3xl font-extrabold text-indigo-700 my-2">
                   ₹399 <span className="text-xs font-normal text-slate-500">/ 30 Uses</span>
                 </div>
-                <p className="text-xs text-indigo-600 font-semibold mb-4">Only ₹13.3 per audit • Local Private AI + Gemini 3.1 Pro</p>
+                <p className="text-xs text-indigo-600 font-semibold mb-4">Only ₹13.3 per audit • Maximum Savings</p>
                 <ul className="space-y-2 text-xs text-slate-700">
                   <li className="flex items-center gap-2">
                     <Check className="w-4 h-4 text-indigo-600 flex-shrink-0" />
@@ -144,7 +144,7 @@ export default function SubscriptionModal({ isOpen, onClose, onSubscriptionSucce
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="w-4 h-4 text-indigo-600 flex-shrink-0" />
-                    <strong>Local Private Legal Engine (100% Zero-Cloud Retention)</strong>
+                    <strong>Zero-Retention Document Processing</strong>
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="w-4 h-4 text-indigo-600 flex-shrink-0" />
@@ -156,13 +156,13 @@ export default function SubscriptionModal({ isOpen, onClose, onSubscriptionSucce
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="w-4 h-4 text-indigo-600 flex-shrink-0" />
-                    Encrypted Vault Storage with Expiration Alarms
+                    Audit History with Expiration Reminders
                   </li>
                 </ul>
               </div>
               <button
                 type="button"
-                onClick={() => setSelectedPlan({ name: 'Pro Power Pack (30 Uses - Gemini 3.1 Pro & Local AI)', price: 399, uses: 30, engine: 'Gemini 3.1 Pro & Local AI' })}
+                onClick={() => setSelectedPlan({ name: 'Pro Power Pack (30 Uses)', price: 399, uses: 30, engine: 'Pro AI' })}
                 className="w-full mt-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-sm rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5"
               >
                 <Sparkles className="w-4 h-4" />
@@ -177,7 +177,7 @@ export default function SubscriptionModal({ isOpen, onClose, onSubscriptionSucce
             <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl flex items-center justify-between">
               <div>
                 <h4 className="font-bold text-blue-950 text-base">{selectedPlan.name}</h4>
-                <p className="text-xs text-blue-700">+{selectedPlan.uses} Document Audits • {selectedPlan.engine || 'Gemini Pro'} • 256-Bit E2E Encrypted</p>
+                <p className="text-xs text-blue-700">+{selectedPlan.uses} Document Audits • Instant Access • Confidential</p>
               </div>
               <div className="text-2xl font-black text-blue-700">
                 ₹{selectedPlan.price}

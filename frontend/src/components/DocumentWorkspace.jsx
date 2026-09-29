@@ -497,12 +497,12 @@ export default function DocumentWorkspace({ user, language, setLanguage, onOpenA
             </button>
           </div>
 
-          {/* Controls: Engine Selector + Ephemeral Mode + E2E Shield + Output Language */}
+          {/* Controls: Engine Selector + Ephemeral Mode + Confidentiality + Output Language */}
           <div className="flex items-center gap-2 flex-wrap">
-            {/* Gemini 3.8 Flash Neural Engine Badge */}
-            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-xl text-blue-900 text-[11px] font-extrabold shadow-xs">
+            {/* AI Compliance Engine Badge */}
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-xl text-blue-900 text-[11px] font-semibold shadow-xs">
               <Sparkles className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
-              <span>Gemini 3.8 Flash Neural Engine</span>
+              <span>AI Compliance Engine</span>
             </div>
 
             {/* Ephemeral Privacy Toggle */}
@@ -516,9 +516,9 @@ export default function DocumentWorkspace({ user, language, setLanguage, onOpenA
               <span>Zero-Retention Shred</span>
             </label>
 
-            <div className="flex items-center gap-1 px-2.5 py-1.5 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-[11px] font-bold">
-              <Lock className="w-3 h-3 text-emerald-600" />
-              <span>256-Bit E2E Encrypted</span>
+            <div className="flex items-center gap-1 px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 text-[11px] font-medium">
+              <Lock className="w-3 h-3 text-slate-600" />
+              <span>Confidential</span>
             </div>
 
             <div className="flex items-center gap-2 p-1 px-2.5 bg-white/90 border border-sky-200 rounded-xl shadow-xs">
@@ -659,7 +659,7 @@ export default function DocumentWorkspace({ user, language, setLanguage, onOpenA
             {errorMsg ? (
               <span className="text-red-600 font-semibold">⚠️ {errorMsg}</span>
             ) : (
-              <span>🔒 256-Bit TLS 1.3 & AES-GCM Encrypted Vault Stream</span>
+              <span>🔒 Confidential & Secure Document Processing</span>
             )}
           </div>
 
@@ -708,24 +708,6 @@ export default function DocumentWorkspace({ user, language, setLanguage, onOpenA
               </div>
             ) : (
               <div className="p-6 sm:p-8 rounded-3xl bg-white/95 border border-sky-200 shadow-xl">
-                
-                {/* 256-Bit Encrypted Vault Sealed Badge */}
-                {reportData.vault_receipt && (
-                  <div className="mb-6 p-3.5 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-emerald-950 shadow-xs">
-                    <div className="flex items-center gap-2">
-                      <ShieldCheck className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                      <span><strong>Encrypted Vault Record:</strong> {reportData.vault_receipt.vault_id}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-[11px] text-emerald-800">
-                        {reportData.vault_receipt.cipher_algorithm}
-                      </span>
-                      <span className="font-mono text-[10px] text-emerald-700 bg-white px-2 py-0.5 rounded border border-emerald-200">
-                        SHA-256 Verified
-                      </span>
-                    </div>
-                  </div>
-                )}
 
                 {/* Header Bar */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-4 border-b border-slate-200">
@@ -737,11 +719,6 @@ export default function DocumentWorkspace({ user, language, setLanguage, onOpenA
                     {reportData.category && (
                       <span className="px-2.5 py-0.5 rounded-lg bg-blue-100 text-blue-800 text-[11px] font-extrabold shadow-xs">
                         📂 {reportData.category}
-                      </span>
-                    )}
-                    {reportData.engine && (
-                      <span className="px-2.5 py-0.5 rounded-lg bg-emerald-100 text-emerald-800 text-[10px] font-extrabold shadow-xs">
-                        🛡️ {reportData.engine}
                       </span>
                     )}
                   </div>

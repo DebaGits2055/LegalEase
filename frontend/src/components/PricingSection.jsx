@@ -32,7 +32,7 @@ export default function PricingSection({ onSelectPlan }) {
               <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" /> <strong>3 Complete Document Audits</strong></li>
               <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" /> Standard 4-Pillar Playbook Check</li>
               <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" /> Real-Time Risk Level Highlighting</li>
-              <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" /> 256-Bit E2E Encrypted Vault</li>
+              <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" /> Confidential Document Processing</li>
               <li className="flex items-center gap-2 text-slate-400">✕ Attorney Counter-Clause Drafting</li>
               <li className="flex items-center gap-2 text-slate-400">✕ Official Signed Audit PDF Certificate</li>
             </ul>
@@ -63,7 +63,7 @@ export default function PricingSection({ onSelectPlan }) {
             </ul>
           </div>
           <button
-            onClick={() => onSelectPlan({ name: 'Standard Pack (10 Uses)', price: 199, uses: 10, engine: 'Gemini Flash' })}
+            onClick={() => onSelectPlan({ name: 'Standard Pack (10 Uses)', price: 199, uses: 10, engine: 'Standard AI' })}
             className="w-full mt-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
           >
             <Sparkles className="w-3.5 h-3.5" />
@@ -71,7 +71,7 @@ export default function PricingSection({ onSelectPlan }) {
           </button>
         </div>
 
-        {/* Pro Power Pack (30 Uses - ₹399) Powered by Gemini 3.1 Pro & Local Private AI */}
+        {/* Pro Power Pack (30 Uses - ₹399) */}
         <div className="liquid-glass-card p-6 border-2 border-indigo-500 flex flex-col justify-between shadow-xl relative overflow-hidden bg-gradient-to-b from-white to-indigo-50/40">
           <div className="absolute top-0 right-0 bg-gradient-to-l from-indigo-600 to-blue-600 text-white text-[9px] font-extrabold px-3 py-0.5 rounded-bl-xl uppercase tracking-wider">
             ⭐ BEST VALUE • SAVE 60%
@@ -80,7 +80,7 @@ export default function PricingSection({ onSelectPlan }) {
             <div className="flex items-center gap-1.5 mb-2">
               <span className="doc-tag text-[10px] px-2 py-0.5 bg-indigo-100 text-indigo-800 border-indigo-200 font-bold">ENTERPRISE GRADE</span>
               <span className="text-[10px] text-indigo-700 font-extrabold flex items-center gap-1 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200">
-                <Cpu className="w-3 h-3 text-indigo-600" /> Pro Engine
+                <Cpu className="w-3 h-3 text-indigo-600" /> Advanced Reasoning
               </span>
             </div>
             <h4 className="font-extrabold text-slate-900 text-lg">Pro Power Pack</h4>
@@ -90,15 +90,15 @@ export default function PricingSection({ onSelectPlan }) {
             <p className="text-xs text-indigo-600 font-bold mb-4">Only ₹13.3 per audit • Maximum Savings</p>
             <ul className="space-y-2.5 text-xs text-slate-700">
               <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-indigo-600 flex-shrink-0" /> <strong>+30 Comprehensive Audits</strong></li>
-              <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-indigo-600 flex-shrink-0" /> <strong>Local Private Legal Engine (100% Zero-Cloud Retention)</strong></li>
+              <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-indigo-600 flex-shrink-0" /> <strong>Zero-Cloud Retention Document Shredding</strong></li>
               <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-indigo-600 flex-shrink-0" /> <strong>Attorney Counter-Drafting with Negotiation Rationale</strong></li>
               <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-indigo-600 flex-shrink-0" /> <strong>Official Legal Risk Scorecard PDF Export</strong></li>
-              <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-indigo-600 flex-shrink-0" /> <strong>Encrypted Vault Storage with Expiration Alarms</strong></li>
-              <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-indigo-600 flex-shrink-0" /> Priority GenAI 3.1 Pro Deep Clause Reasoning</li>
+              <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-indigo-600 flex-shrink-0" /> <strong>Audit History with Expiration Reminders</strong></li>
+              <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-indigo-600 flex-shrink-0" /> Deep Legal Clause Reasoning & Flagging</li>
             </ul>
           </div>
           <button
-            onClick={() => onSelectPlan({ name: 'Pro Power Pack (30 Uses - Gemini 3.1 Pro & Local AI)', price: 399, uses: 30, engine: 'Gemini 3.1 Pro & Local AI' })}
+            onClick={() => onSelectPlan({ name: 'Pro Power Pack (30 Uses)', price: 399, uses: 30, engine: 'Pro AI' })}
             className="w-full mt-6 py-3 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
           >
             <Sparkles className="w-3.5 h-3.5" />

@@ -13,7 +13,7 @@ export default function Navbar({ user, onOpenAuth, onOpenProfile, onOpenSubscrip
           <div>
             <h1 className="text-lg font-black tracking-tight text-slate-900 leading-none">LegalEase</h1>
             <p className="text-[11px] text-slate-500 font-medium hidden sm:block">Autonomous Legal Intelligence & Playbook Compliance</p>
-            <p className="text-[10px] text-emerald-700 font-semibold sm:hidden flex items-center gap-1">🔒 256-Bit Encrypted</p>
+            <p className="text-[10px] text-slate-500 font-medium sm:hidden flex items-center gap-1">🔒 Confidential</p>
           </div>
         </div>
 
